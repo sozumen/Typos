@@ -609,9 +609,11 @@
 			let full = cslItem[csl];
 			if (!full || typeof full !== 'string') continue;
 			let abbreviation;
-			if (type === 'journal' && short && cslItem[short]
-					&& options.preferItemAbbreviations !== false) {
-				abbreviation = cslItem[short];
+			// Zotero's CSL JSON carries the item's Journal Abbr as journalAbbreviation, other
+			// tools as container-title-short
+			let own = type === 'journal' && short ? (cslItem[short] || cslItem.journalAbbreviation) : null;
+			if (own && options.preferItemAbbreviations !== false) {
+				abbreviation = own;
 			}
 			else {
 				abbreviation = index.lookupSimple(type, full)?.abbreviation;
@@ -621,11 +623,17 @@
 				if (cslItem[csl] !== abbreviation || (short && cslItem[short] !== abbreviation)) {
 					cslItem[csl] = abbreviation;
 					if (short) cslItem[short] = abbreviation;
+					if (type === 'journal' && cslItem.journalAbbreviation) {
+						cslItem.journalAbbreviation = abbreviation;
+					}
 					changed = true;
 				}
 			}
 			else if (short && cslItem[short] !== abbreviation) {
 				cslItem[short] = abbreviation;
+				if (type === 'journal' && cslItem.journalAbbreviation) {
+					cslItem.journalAbbreviation = abbreviation;
+				}
 				changed = true;
 			}
 		}

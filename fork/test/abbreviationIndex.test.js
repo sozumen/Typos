@@ -318,6 +318,18 @@ test('the item\'s own Journal Abbr wins unless preferItemAbbreviations is false'
 	assert.equal(b['container-title-short'], 'JHS');
 });
 
+test('Zotero\'s CSL JSON carries Journal Abbr as journalAbbreviation, and that counts as the item\'s own', () => {
+	let index = new A.AbbreviationIndex([journalList()]);
+	let make = () => ({ 'container-title': 'Journal of Hellenic Studies', journalAbbreviation: 'J. Hell. Stud.' });
+	let a = make();
+	A.applyToCSL(a, index, { mode: 'abbreviated' });
+	assert.equal(a['container-title'], 'J. Hell. Stud.');
+	let b = make();
+	A.applyToCSL(b, index, { mode: 'abbreviated', preferItemAbbreviations: false });
+	assert.equal(b['container-title'], 'JHS');
+	assert.equal(b.journalAbbreviation, 'JHS');
+});
+
 test('explicit types override the defaults and the legacy flags', () => {
 	let index = new A.AbbreviationIndex([journalList()]);
 	let item = { title: 'Iliad', 'container-title': 'The Classical Quarterly' };
