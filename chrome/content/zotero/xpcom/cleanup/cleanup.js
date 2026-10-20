@@ -326,7 +326,8 @@ Zotero.Cleanup = new function () {
 				let item = await Zotero.Items.getAsync(c.id);
 				if (!item || item.key !== c.key) continue;
 				await item.loadAllData();
-				item.fromJSON(c.before);
+				// Strict, so Extra isn't read again and its lines turned back into fields and creators
+				item.fromJSON(c.before, { strict: true });
 				await item.save();
 				restored++;
 			}

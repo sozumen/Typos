@@ -505,6 +505,7 @@ Zotero.JurismImport = new function () {
 						let item = new Zotero.Item();
 						item.libraryID = libraryID;
 						item.key = entry.key;
+						await item.loadPrimaryData();
 						item.fromJSON(entry.json);
 						await item.save({
 							skipSelect: true,

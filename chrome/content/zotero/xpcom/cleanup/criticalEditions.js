@@ -295,6 +295,10 @@
 				suggestions.push(s);
 			}
 			s.itemIDs.push(itemID);
+			// Several items share one record: fill in what the first one lacked from the others
+			for (let [name, value] of Object.entries(build.fields || {})) {
+				if (!s.build.fields[name]) s.build.fields[name] = value;
+			}
 			return s;
 		};
 

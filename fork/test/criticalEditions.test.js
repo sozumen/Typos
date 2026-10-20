@@ -217,3 +217,15 @@ test('entityData builds records with the right type, title and creators', () => 
 	assert.equal(by('multiVolume').fields.title, 'Le pédagogue');
 	assert.equal(by('multiVolume').fields.series, 'Sources chrétiennes');
 });
+
+test('planAll: a shared record gets the fields from whichever item has them', () => {
+	let plain = {
+		id: 10, itemType: 'classic',
+		fields: { title: 'Adversus Marcionem', extra: 'Book-title: X\nVolume-title: Y\nEditor: A || B' },
+		creators: [{ creatorType: 'author', lastName: 'Tertullian', firstName: '', fieldMode: 1 }]
+	};
+	let { suggestions } = C.planAll([plain, tertullian], schema);
+	let work = suggestions.find(s => s.kind === 'work');
+	assert.equal(work.build.fields.referenceSystem, 'Book, chapter');
+	assert.equal(C.entityData(work).fields.originalLanguage, 'la');
+});
