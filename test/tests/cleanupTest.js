@@ -3,6 +3,14 @@
 describe("Zotero.Cleanup", function () {
 	var libraryID;
 	
+	var counter = 0;
+	
+	// Work titles must be unique across tests, since records an earlier test created stay in the
+	// library and would be offered as the existing work
+	function unique(title) {
+		return title + ' ' + (++counter) + Zotero.Utilities.randomString(4);
+	}
+	
 	async function createClassic(title, authorName, extra, fields = {}) {
 		let item = new Zotero.Item('classic');
 		item.libraryID = libraryID;
@@ -36,7 +44,7 @@ describe("Zotero.Cleanup", function () {
 	
 	describe("critical editions step", function () {
 		it("should find candidates and leave other Classic Works alone", async function () {
-			let edition = await createClassic('Adversus Marcionem', 'Tertullian', TERTULLIAN);
+			let edition = await createClassic(unique('Adversus Marcionem'), 'Tertullian', TERTULLIAN);
 			let plain = await createClassic('Iliad', 'Homer', '');
 			let scan = await Zotero.Cleanup.scanCriticalEditions(libraryID);
 			let ids = scan.items.map(p => p.itemID);
@@ -45,9 +53,9 @@ describe("Zotero.Cleanup", function () {
 		});
 		
 		it("should convert items, create linked records and write an undo file", async function () {
-			let tertullian = await createClassic('Adversus Marcionem', 'Tertullian', TERTULLIAN,
+			let tertullian = await createClassic(unique('Adversus Marcionem'), 'Tertullian', TERTULLIAN,
 				{ referenceSystem: 'Book, chapter' });
-			let clement = await createClassic('Paedagogus', 'Clement of Alexandria', CLEMENT);
+			let clement = await createClassic(unique('Paedagogus'), 'Clement of Alexandria', CLEMENT);
 			let scan = await Zotero.Cleanup.scanCriticalEditions(libraryID);
 			let mine = scan.items.filter(p => [tertullian.id, clement.id].includes(p.itemID));
 			let suggestions = scan.suggestions.filter(s => s.itemIDs.some(id => [tertullian.id, clement.id].includes(id)));
@@ -72,7 +80,7 @@ describe("Zotero.Cleanup", function () {
 			let work = (await Zotero.ItemRelations.getOutgoing(tertullian))
 				.find(r => r.typeKey === 'criticalEditionOf').items[0];
 			assert.equal(work.itemType, 'classic');
-			assert.equal(work.getField('title'), 'Adversus Marcionem');
+			assert.equal(work.getField('title'), tertullian.getField('title'));
 			assert.equal(work.getField('referenceSystem'), 'Book, chapter');
 			let volume = (await Zotero.ItemRelations.getOutgoing(tertullian))
 				.find(r => r.typeKey === 'partOf').items[0];
@@ -95,8 +103,8 @@ describe("Zotero.Cleanup", function () {
 		});
 		
 		it("should make editions of the same work siblings", async function () {
-			let a = await createClassic('Adversus Marcionem', 'Tertullian', TERTULLIAN);
-			let b = await createClassic('Adversus Marcionem', 'Tertullian',
+			let a = await createClassic(unique('Adversus Marcionem'), 'Tertullian', TERTULLIAN);
+			let b = await createClassic(a.getField('title'), 'Tertullian',
 				'Book-title: Tertullian\nVolume-title: Contre Marcion 1\nEditor: Braun || René');
 			let scan = await Zotero.Cleanup.scanCriticalEditions(libraryID);
 			let work = scan.suggestions.find(s => s.kind === 'work' && s.itemIDs.includes(a.id));
@@ -111,7 +119,7 @@ describe("Zotero.Cleanup", function () {
 		});
 		
 		it("should keep the data when a record is not ticked", async function () {
-			let item = await createClassic('Adversus Marcionem', 'Tertullian', TERTULLIAN,
+			let item = await createClassic(unique('Adversus Marcionem'), 'Tertullian', TERTULLIAN,
 				{ referenceSystem: 'Book, chapter' });
 			let scan = await Zotero.Cleanup.scanCriticalEditions(libraryID);
 			await Zotero.Cleanup.applyCriticalEditions(scan, { itemIDs: [item.id], suggestionIDs: [] });
@@ -122,7 +130,7 @@ describe("Zotero.Cleanup", function () {
 		});
 		
 		it("should undo a run", async function () {
-			let item = await createClassic('Adversus Marcionem', 'Tertullian', TERTULLIAN);
+			let item = await createClassic(unique('Adversus Marcionem'), 'Tertullian', TERTULLIAN);
 			let before = item.toJSON();
 			let scan = await Zotero.Cleanup.scanCriticalEditions(libraryID);
 			let work = scan.suggestions.find(s => s.kind === 'work' && s.itemIDs.includes(item.id));

@@ -66,6 +66,7 @@ the relation namespace URI).
 | 5 | Abbreviation lists (classics, journals, series…), selectable per style and per document | Done. Not runnable-tested here | `xpcom/abbreviationIndex.js`, `abbreviationProfiles.js`, `classicalAbbreviations.js`, Preferences → Cite |
 | 6 | **Visual Style Editor**: edit any CSL style as a tree, with live preview | Done. Engine tested; UI only in a simulated browser | `xpcom/styleEditor/`, `tools/visualStyleEditor.*`, `docs/STYLE-EDITOR.md` |
 | 7 | **Write a Style with AI** from a style manual or example citations (Claude, your own API key) | Done. Never called the real API | `xpcom/styleAI/`, `tools/styleAI.*`, `docs/STYLE-EDITOR.md` |
+| 8 | **Library cleanup**: critical editions imported as Classic Works → proper records and relationships; merge duplicate works keeping titles as languages | Done. See in-app test status below | `xpcom/cleanup/`, `tools/cleanup.*`, Tools → Library Cleanup…, `docs/CLEANUP.md` |
 
 Dropped from Juris-M, as requested: legal citation (jurisdiction/court tables, legal item
 types' special fields). Multilingual: **data is preserved** on import (see below) but there is no
@@ -165,6 +166,17 @@ to Claude, checks and repairs what comes back, and opens it in the editor as an 
 
 **Privacy:** the AI feature sends the material you add (a PDF whole) to Anthropic with your own API
 key; nothing from your library is sent. The key is stored encrypted via the login manager.
+
+### 8. Library cleanup
+
+Tools → **Library Cleanup…** runs a list of cleanup steps; each one finds items, shows a preview with
+a checkbox on every item and every record it would create, and applies only what is ticked, in
+one transaction, with an undo file. The first step turns Classic Work items that are really critical
+editions (author, work title, editor and container/volume title in Extra) into Book / Book Section
+records linked to a new Classic Work, volume and multi-volume record. "Siblings" (items related the same
+way to the same item) are listed in the Relationships section. Tools → **Merge Selected Works…**
+merges duplicate works and keeps the other titles as alternate-language titles. Details and
+limits: `docs/CLEANUP.md`.
 
 ## Building and testing
 

@@ -11,7 +11,15 @@ set +e
 status=${PIPESTATUS[0]}
 set -e
 if [ "$status" -ne 0 ]; then
-	tail_text=$(tail -n "${CI_RUN_LINES:-60}" "$log" | tr -d '\r' | cut -c1-400)
+	# Lines that only add noise (set CI_RUN_EXCLUDE to change), then the failed tests with a few
+	# lines of context, then the end of the output
+	clean=$(mktemp)
+	tr -d '\r' < "$log" | grep -Ev "${CI_RUN_EXCLUDE:-single-file-hooks|SingleFileChild|GraphicsCriticalError}" > "$clean" || true
+	failures=$(grep -A6 -E '❌|\[FAIL\]' "$clean" | head -n 60 | cut -c1-400 || true)
+	tail_text=$(tail -n "${CI_RUN_LINES:-60}" "$clean" | cut -c1-400)
+	if [ -n "$failures" ]; then
+		tail_text=$(printf 'FAILED TESTS\n%s\n--- end of output ---\n%s' "$failures" "$tail_text")
+	fi
 	# Annotation messages need %, CR and LF escaped
 	tail_text=${tail_text//'%'/'%25'}
 	tail_text=${tail_text//$'\n'/'%0A'}
