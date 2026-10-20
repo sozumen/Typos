@@ -2069,8 +2069,13 @@ Zotero.Integration.Session.prototype.setDocPrefs = async function (showImportExp
 	data.prefs = oldData ? Object.assign({}, oldData.prefs) : {};
 	data.prefs.fieldType = io.fieldType;
 	data.prefs.automaticJournalAbbreviations = io.automaticJournalAbbreviations;
-	// '' (no choice for this document) is dropped when the preferences are saved
-	data.prefs.abbreviationProfile = io.abbreviationProfile || '';
+	// No choice for this document: leave the preference out of the document data
+	if (io.abbreviationProfile) {
+		data.prefs.abbreviationProfile = io.abbreviationProfile;
+	}
+	else {
+		delete data.prefs.abbreviationProfile;
+	}
 	data.prefs.delayCitationUpdates = io.delayCitationUpdates
 	
 	var forceStyleReset = oldData
@@ -2754,8 +2759,9 @@ Zotero.Integration.DocumentData.prototype.unserializeXML = function (xmlData) {
 	
 	this.prefs.noteType = parseInt(this.prefs.noteType) || 0;
 	if (this.prefs["automaticJournalAbbreviations"] === undefined) this.prefs["automaticJournalAbbreviations"] = false;
-	// Which abbreviation profile this document uses; '' means whatever the style or defaults say
-	if (this.prefs["abbreviationProfile"] === undefined) this.prefs["abbreviationProfile"] = '';
+	// prefs.abbreviationProfile (which abbreviation profile this document uses) is only present when
+	// a profile was chosen; without it, the style or the defaults decide. Leaving it out keeps
+	// document data identical to what other versions write.
 	this.zoteroVersion = doc.documentElement.getAttribute("zotero-version");
 	if (!this.zoteroVersion) this.zoteroVersion = "2.0";
 	this.dataVersion = doc.documentElement.getAttribute("data-version");
