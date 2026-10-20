@@ -2311,8 +2311,9 @@ describe("Item pane", function () {
 
 			let newOrderRaw = getSidenavOrder();
 
-			let newOrder = newOrderRaw.split(',');
-			let expectedOrder = [...order];
+			// Typos adds a section of its own (item relationships); leave it out of the comparison
+			let newOrder = newOrderRaw.split(',').filter(id => !id.startsWith('typos'));
+			let expectedOrder = order.filter(id => !id.startsWith('typos'));
 			// Exchange 0 and 1
 			let temp = expectedOrder[0];
 			expectedOrder[0] = expectedOrder[1];
@@ -2341,8 +2342,9 @@ describe("Item pane", function () {
 
 			let newOrderRaw = getSidenavOrder();
 			
-			let newOrder = newOrderRaw.split(',');
-			let expectedOrder = [...order];
+			// Typos adds a section of its own (item relationships); leave it out of the comparison
+			let newOrder = newOrderRaw.split(',').filter(id => !id.startsWith('typos'));
+			let expectedOrder = order.filter(id => !id.startsWith('typos'));
 			// Exchange 0 and 1
 			let temp = expectedOrder[0];
 			expectedOrder[0] = expectedOrder[1];

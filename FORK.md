@@ -194,9 +194,7 @@ test/runtests.sh classicItem itemRelations classicalAbbreviations jurismImport b
 
 Everything here was written in a sandbox without a built Zotero runtime. In particular:
 
-- **The app has not been built or launched.** `npm install` / `npm run build` never ran here.
-  Expect some first-build errors (a typo, a missing import); they should be small. The Windows
-  build workflow does run them, and its log is the first real test.
+- **The app builds and starts** (Linux runner for the tests; Windows runner for the installer).
 - **Windows build, tested on a GitHub runner (not on your PC):** the workflow builds the app, builds
   the installer, installs it silently for one user, checks the files and version info, starts the
   app (window title "My Library - Typos", local port answering), and uninstalls it. This passed.
@@ -204,10 +202,17 @@ Everything here was written in a sandbox without a built Zotero runtime. In part
   check/prompt/install against a real release, the upstream watcher against real GitHub, anything
   with an actual library, a word processor or a second monitor. See `docs/WINDOWS.md` for what is
   deliberately not done (code signing, Mac installer).
-- The Mocha tests inside the app (`test/runtests.sh`) still have not been run.
-- **The in-app Mocha tests have never run**: `test/tests/classicItemTypeTest.js`,
-  `itemRelationsTest.js`, `classicalAbbreviationsTest.js`, `jurismImportTest.js`,
-  `backupTest.js`. Run them first.
+- **In-app Mocha tests now run in CI** (`.github/workflows/app-tests.yml`, started by hand from the
+  Actions tab; arguments are the same as `test/runtests.sh`). They ran against a Linux build, with
+  no display, so nothing that needs a real window, a word processor or Windows-specific behavior was
+  exercised. The first run found three real bugs, now fixed: an item's own Journal Abbr never won over an
+  abbreviation list (Zotero's CSL JSON calls the variable `journalAbbreviation`); the Juris-M JSON
+  import failed on every item; and every document got an `abbreviationProfile` setting written into it.
+  It also showed that four of upstream's tests assume the stock item types and sample data; those
+  were updated for the Classic Work type (`cachedTypesTest.js`, `data/allTypesAndFields.js`).
+  Passing at the last run: Classic type, relations (including siblings), abbreviations, Juris-M
+  import, backup, local server (including port fallback) and library cleanup. See
+  `docs/CLEANUP.md` for the cleanup tests.
 - **The Node tests do pass** (`node --test fork/test/*.test.js`) and cover the pure logic: relation
   graph, abbreviation parsing/lookup/profiles/resolution (including the storage module against a
   stubbed Zotero), Jurism field mapping and SQL (against Jurism's real DDL), backup planning and
