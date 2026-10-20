@@ -14,9 +14,14 @@ on:
         description: 'How many lines from the end of the output to put in the annotation'
         required: false
         default: '120'
+      regenerate:
+        description: 'Also rewrite the generated sample data (itemJSON, translatorExport*) and push it to the branch "sample-data" (use with args "sampleDataGenerator")'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   tests:
@@ -65,4 +70,15 @@ jobs:
       - name: Run the tests
         env:
           CI_RUN_LINES: ${{ inputs.lines }}
+          TYPOS_SAMPLE_DATA_DIR: ${{ inputs.regenerate && format('{0}/test/tests/data', github.workspace) || '' }}
         run: .github/scripts/ci-run 'In-app tests' xvfb-run test/runtests.sh ${{ inputs.args }}
+
+      - name: Push regenerated sample data
+        if: ${{ inputs.regenerate }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add test/tests/data
+          git diff --cached --stat
+          git commit -m "Regenerate sample data" || { echo "Nothing changed"; exit 0; }
+          git push --force origin HEAD:refs/heads/sample-data
