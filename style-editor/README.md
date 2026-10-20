@@ -1,20 +1,19 @@
 # Visual Style Editor and AI style writer
 
-Adds Tools → Visual Style Editor… and Tools → Write a Style with AI… to Typos. See
-`docs/STYLE-EDITOR.md` inside the patch for how it works, what the AI feature sends to Anthropic,
-and what has and has not been verified (the windows have not run in a real Typos build).
+Adds Tools → Visual Style Editor… and Tools → Write a Style with AI… to Typos. The patch includes
+`docs/STYLE-EDITOR.md`, which explains how it works, what the AI feature sends to Anthropic, and
+what has and has not been verified (the windows have not run in a real Typos build).
 
 The change is on top of commit `31fa29f` ("Rename the application to Typos"), the head of
-`typos.bundle`. Two equivalent ways to apply it:
+`typos.bundle`. In a Typos working copy at that commit:
 
 ```
-# 1. From the bundle (keeps the commit)
-git clone typos.bundle typos && cd typos
-git fetch ../style-editor/style-editor.bundle style-editor:style-editor
-git checkout style-editor
-
-# 2. From the patch
-git am style-editor/0001-style-editor.patch
+git checkout -b style-editor
+git am path/to/style-editor/0001-style-editor.patch
+node --test fork/test/*.test.js     # 236 tests pass
 ```
 
-Check: `node --test fork/test/*.test.js` (236 tests pass).
+`style-editor.bundle` holds the same commit (it needs `31fa29f` to already be in the repository you
+fetch it into: `git fetch style-editor.bundle style-editor:style-editor`). Note that
+`git clone typos.bundle` does not work directly, because the bundle was made from a shallow copy;
+unpack it with `git init && git bundle unbundle typos.bundle`, then mark the shallow boundary.
