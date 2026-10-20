@@ -406,6 +406,79 @@
 		"url": "http://www.example.com",
 		"version": 0
 	},
+	"classic": {
+		"DOI": "10.1234/example.doi",
+		"ISBN": "978-1-234-56789-7",
+		"abstractNote": "Abstract note",
+		"accessDate": "1997-06-13T23:59:58Z",
+		"archive": "Archive",
+		"archiveLocation": "Archive location",
+		"callNumber": "Call number",
+		"citationKey": "Citation key",
+		"collections": [],
+		"compositionDate": "Composition date",
+		"corpusId": "Corpus id",
+		"creators": [
+			{
+				"creatorType": "author",
+				"firstName": "authorFirst",
+				"lastName": "authorLast"
+			},
+			{
+				"creatorType": "contributor",
+				"firstName": "contributorFirst",
+				"lastName": "contributorLast"
+			},
+			{
+				"creatorType": "editor",
+				"firstName": "editorFirst",
+				"lastName": "editorLast"
+			},
+			{
+				"creatorType": "seriesEditor",
+				"firstName": "seriesEditorFirst",
+				"lastName": "seriesEditorLast"
+			},
+			{
+				"creatorType": "translator",
+				"firstName": "translatorFirst",
+				"lastName": "translatorLast"
+			},
+			{
+				"creatorType": "author",
+				"name": "Institutional Author"
+			}
+		],
+		"date": "1999-12-31",
+		"dateAdded": "2026-10-20T22:01:15Z",
+		"dateModified": "2026-10-20T22:01:15Z",
+		"edition": "8",
+		"extra": "Extra",
+		"itemType": "classic",
+		"key": "Y4M7AP2D",
+		"language": "en-US",
+		"libraryCatalog": "Library catalog",
+		"manuscriptType": "Type",
+		"numPages": "4",
+		"numberOfVolumes": "7",
+		"originalDate": "Original date",
+		"originalLanguage": "Original language",
+		"originalPlace": "Original place",
+		"originalPublisher": "Original publisher",
+		"place": "Place",
+		"publisher": "Publisher",
+		"referenceSystem": "Reference system",
+		"relations": {},
+		"rights": "Rights",
+		"series": "Series",
+		"seriesNumber": "9",
+		"shortTitle": "Short title",
+		"tags": [],
+		"title": "Title",
+		"url": "http://www.example.com",
+		"version": 0,
+		"volume": "6"
+	},
 	"computerProgram": {
 		"DOI": "10.1234/example.doi",
 		"ISBN": "978-1-234-56789-7",
