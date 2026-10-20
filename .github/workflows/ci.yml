@@ -30,6 +30,7 @@ jobs:
           SHA: ${{ github.sha }}
           BEFORE: ${{ github.event.before }}
           BASE: ${{ github.event.pull_request.base.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           network=false
           if [[ "$EVENT" == "workflow_dispatch" || "$EVENT" == "schedule" ]]; then
@@ -38,7 +39,7 @@ jobs:
             base="$BASE"
             [[ -z "$base" ]] && base="$BEFORE"
             git init -q repo && cd repo
-            git remote add origin "https://github.com/$REPO"
+            git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/$REPO"
             git fetch -q --depth 1 origin "$SHA"
             # Run the tests if the base of the change can't be determined (e.g., a new
             # branch or an unfetchable pre-force-push commit)
