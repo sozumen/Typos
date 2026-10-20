@@ -3,7 +3,8 @@ describe("Zotero.CachedTypes", function() {
 		describe("#getPrimaryTypes()", function () {
 			it("should return an array of objects with 'id' and 'name' properties", function () {
 				var types = Zotero.ItemTypes.getPrimaryTypes();
-				assert.lengthOf(types, 5);
+				// Upstream has 5; Typos adds Classic Work to the primary types
+				assert.lengthOf(types, 6);
 				for (let type of types) {
 					assert.property(type, 'id');
 					assert.property(type, 'name');
