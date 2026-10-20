@@ -101,7 +101,12 @@ jobs:
           node-version: 18
 
       - name: Install Node modules
-        run: .github/scripts/ci-run 'npm install' npm install
+        run: |
+          for attempt in 1 2 3; do
+            .github/scripts/ci-run "npm install (try $attempt)" npm install --fetch-retries=5 --fetch-retry-mintimeout=20000 && exit 0
+            sleep 15
+          done
+          exit 1
 
       - name: Build
         run: .github/scripts/ci-run 'npm run build' npm run build
