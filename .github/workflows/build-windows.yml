@@ -252,7 +252,8 @@ jobs:
           $dir = Join-Path $env:LOCALAPPDATA 'Typos'
           if (-not (Test-Path (Join-Path $dir 'zotero.exe'))) {
             $where = (Get-ChildItem $env:LOCALAPPDATA, $env:ProgramFiles -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*Typos*' -or $_.Name -like '*Zotero*' } | ForEach-Object { $_.FullName }) -join '; '
-            throw "Installer exit code $($p.ExitCode); zotero.exe is not in $dir. Typos/Zotero folders found: $where"
+            $logs = Get-ChildItem (Join-Path $env:ProgramFiles 'Typos') -Recurse -Filter *.log -ErrorAction SilentlyContinue | ForEach-Object { "$($_.FullName):`n" + ((Get-Content $_.FullName -Tail 30) -join "`n") }
+            throw "Installer exit code $($p.ExitCode); zotero.exe is not in $dir. Typos/Zotero folders found: $where`n$($logs -join "`n")"
           }
           foreach ($f in 'updater.exe','xul.dll','application.ini','uninstall\helper.exe') {
             if (-not (Test-Path (Join-Path $dir $f))) { throw "$f is missing from the install" }

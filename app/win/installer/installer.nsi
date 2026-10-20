@@ -863,6 +863,21 @@ FunctionEnd
 ################################################################################
 # Initialization Functions
 
+; For a per-user install: if the install folder is still the built-in all-users default, use the
+; person's own folder instead. A folder chosen with /D= is left alone. NSIS may or may not leave a
+; trailing backslash on $INSTDIR, and which Program Files variable matches depends on the registry
+; view, so every spelling is checked.
+Function UseUserFolderIfDefault
+  ${If} "$INSTDIR" == "$PROGRAMFILES64\${BrandFullName}\"
+  ${OrIf} "$INSTDIR" == "$PROGRAMFILES64\${BrandFullName}"
+  ${OrIf} "$INSTDIR" == "$PROGRAMFILES32\${BrandFullName}\"
+  ${OrIf} "$INSTDIR" == "$PROGRAMFILES32\${BrandFullName}"
+  ${OrIf} "$INSTDIR" == "$PROGRAMFILES\${BrandFullName}\"
+  ${OrIf} "$INSTDIR" == "$PROGRAMFILES\${BrandFullName}"
+    StrCpy $INSTDIR "$LOCALAPPDATA\${BrandFullName}\"
+  ${EndIf}
+FunctionEnd
+
 ; Decides between a per-user and an all-users install. Sets $InstallScope and, for per-user,
 ; the default install folder. Must run before InstallOnInitCommon, which does the UAC elevation.
 ;
@@ -925,16 +940,7 @@ Either way, your library and settings stay in your own user profile." \
 
   scope_done:
   ${If} $InstallScope == "user"
-    ; Only replace the built-in default; respect /D=
-    !ifdef HAVE_64BIT_BUILD
-      ${If} "$INSTDIR" == "$PROGRAMFILES64\${BrandFullName}\"
-        StrCpy $INSTDIR "$LOCALAPPDATA\${BrandFullName}\"
-      ${EndIf}
-    !else
-      ${If} "$INSTDIR" == "$PROGRAMFILES32\${BrandFullName}\"
-        StrCpy $INSTDIR "$LOCALAPPDATA\${BrandFullName}\"
-      ${EndIf}
-    !endif
+    Call UseUserFolderIfDefault
   ${EndIf}
   Pop $R1
   Pop $R0
@@ -954,10 +960,7 @@ Function CheckAllUsersElevated
         IDYES +2
       Quit
       StrCpy $InstallScope "user"
-      ${If} "$INSTDIR" == "$PROGRAMFILES64\${BrandFullName}\"
-      ${OrIf} "$INSTDIR" == "$PROGRAMFILES32\${BrandFullName}\"
-        StrCpy $INSTDIR "$LOCALAPPDATA\${BrandFullName}\"
-      ${EndIf}
+      Call UseUserFolderIfDefault
     ${EndIf}
   ${EndIf}
 FunctionEnd
