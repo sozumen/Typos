@@ -280,7 +280,9 @@ jobs:
           $dir = Join-Path $env:LOCALAPPDATA 'Typos'
           $profile = Join-Path $env:RUNNER_TEMP 'smoke-profile'
           New-Item -ItemType Directory -Force -Path $profile | Out-Null
-          $proc = Start-Process -FilePath (Join-Path $dir 'zotero.exe') -ArgumentList '-no-remote','-profile',"`"$profile`"" -PassThru
+          $out = Join-Path $env:RUNNER_TEMP 'typos-stdout.txt'
+          $err = Join-Path $env:RUNNER_TEMP 'typos-stderr.txt'
+          $proc = Start-Process -FilePath (Join-Path $dir 'zotero.exe') -ArgumentList '-no-remote','-ZoteroDebugText','-profile',"`"$profile`"" -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
           $ok = $false
           for ($i = 0; $i -lt 90; $i++) {
             Start-Sleep -Seconds 2
@@ -292,7 +294,12 @@ jobs:
             } catch { }
           }
           if (-not $ok) {
-            Get-ChildItem -Recurse $profile -Filter *.log -ErrorAction SilentlyContinue | ForEach-Object { "--- $($_.FullName)"; Get-Content $_.FullName -Tail 50 }
+            $facts = @()
+            $facts += 'Windows: ' + ((Get-Process -Name zotero -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | ForEach-Object { "'$($_.MainWindowTitle)'" }) -join ', ')
+            $facts += 'Listening ports of zotero: ' + ((Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name -eq 'zotero' } | ForEach-Object { $_.LocalPort }) -join ',')
+            $facts += 'Profile files: ' + ((Get-ChildItem $profile -ErrorAction SilentlyContinue | ForEach-Object { $_.Name }) -join ', ')
+            foreach ($f in $out, $err) { if (Test-Path $f) { $facts += "--- $f ($((Get-Item $f).Length) bytes)"; $facts += (Get-Content $f -Tail 40) } }
+            Write-Host "::warning title=Typos start-up facts::$(($facts -join "`n") -replace "`r?`n",'%0A')"
             $running = (Get-Process -Name zotero -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Id)" }) -join ','
             Get-Process -Name zotero -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
             throw "Typos did not answer on its local port within three minutes (zotero processes running: '$running')"
