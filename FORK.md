@@ -210,9 +210,11 @@ Everything here was written in a sandbox without a built Zotero runtime. In part
   import failed on every item; and every document got an `abbreviationProfile` setting written into it.
   It also showed that four of upstream's tests assume the stock item types and sample data; those
   were updated for the Classic Work type (`cachedTypesTest.js`, `data/allTypesAndFields.js`).
-  Passing at the last run: Classic type, relations (including siblings), abbreviations, Juris-M
-  import, backup, local server (including port fallback) and library cleanup. See
-  `docs/CLEANUP.md` for the cleanup tests.
+  At the last run, all four shards of upstream's own suite (`ci.yml`) and every test added by this
+  fork passed: Classic type, relations (including siblings), abbreviations, Juris-M import, backup,
+  local server (including port fallback) and library cleanup. When item types change, regenerate the
+  generated sample data with the app-tests workflow (`args: sampleDataGenerator`, `regenerate`
+  ticked); it pushes the files to a branch called `sample-data`.
 - **The Node tests do pass** (`node --test fork/test/*.test.js`) and cover the pure logic: relation
   graph, abbreviation parsing/lookup/profiles/resolution (including the storage module against a
   stubbed Zotero), Jurism field mapping and SQL (against Jurism's real DDL), backup planning and

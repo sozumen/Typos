@@ -75,5 +75,6 @@ does not guess which works are the same: you choose.
   by text; the merge is manual.
 - Alternate-language titles are stored in Extra, not in a field of their own, and are not shown
   in the item pane or used in citations.
-- Converting item types uses Zotero's own type change; the in-app tests (`test/tests/cleanupTest.js`)
-  exercise it, but no real library has been cleaned yet. Make a backup first.
+- Converting item types uses Zotero's own type change. The in-app tests (`test/tests/cleanupTest.js`)
+  cover scanning, converting, linking, siblings, undo and merging, and pass. The two windows have
+  not been looked at on screen, and no real library has been cleaned yet. Make a backup first.
