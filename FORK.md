@@ -185,11 +185,14 @@ Everything here was written in a sandbox without a built Zotero runtime. In part
 - **The app has not been built or launched.** `npm install` / `npm run build` never ran here.
   Expect some first-build errors (a typo, a missing import); they should be small. The Windows
   build workflow does run them, and its log is the first real test.
-- **The Windows installer, the install-scope choice, the in-app updater glue and the upstream
-  watcher have never run on a real Windows machine or against the real GitHub.** Their logic is
-  tested in Node against fakes; the build workflow installs and starts the app on a runner, which
-  is the first real check. See `docs/WINDOWS.md` for what is deliberately not done (code signing,
-  `zotero.exe` rename, Mac installer).
+- **Windows build, tested on a GitHub runner (not on your PC):** the workflow builds the app, builds
+  the installer, installs it silently for one user, checks the files and version info, starts the
+  app (window title "My Library - Typos", local port answering), and uninstalls it. This passed.
+  Not tried: the installer's click-through screens, the all-users install, the in-app update
+  check/prompt/install against a real release, the upstream watcher against real GitHub, anything
+  with an actual library, a word processor or a second monitor. See `docs/WINDOWS.md` for what is
+  deliberately not done (code signing, `zotero.exe` rename, Mac installer).
+- The Mocha tests inside the app (`test/runtests.sh`) still have not been run.
 - **The in-app Mocha tests have never run**: `test/tests/classicItemTypeTest.js`,
   `itemRelationsTest.js`, `classicalAbbreviationsTest.js`, `jurismImportTest.js`,
   `backupTest.js`. Run them first.
