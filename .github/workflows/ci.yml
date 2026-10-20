@@ -105,6 +105,9 @@ jobs:
         if: steps.xulrunner-cache.outputs.cache-hit != 'true'
         run: app/scripts/fetch_xulrunner -p l
 
+      - name: Fetch the updater binary (kept in upstream's LFS store)
+        run: app/scripts/fetch_lfs_upstream app/linux/updater.tar.xz
+
       - name: Cache Node modules
         id: node-cache
         uses: actions/cache@v4
@@ -210,6 +213,9 @@ jobs:
       - name: Fetch xulrunner
         if: steps.xulrunner-cache.outputs.cache-hit != 'true'
         run: app/scripts/fetch_xulrunner -p m
+
+      - name: Fetch the updater binary (kept in upstream's LFS store)
+        run: app/scripts/fetch_lfs_upstream app/mac/updater.tar.xz
 
       - name: Cache Node modules
         id: node-cache
