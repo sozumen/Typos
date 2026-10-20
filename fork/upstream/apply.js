@@ -108,7 +108,13 @@ function main() {
 	let msg = 'Bring in upstream Zotero ' + (t.target.name || o.track) + ' (' + t.target.sha.slice(0, 7) + '), mode ' + o.mode + '\n\n'
 		+ applied.written.length + ' files written, ' + applied.removed.length + ' removed, ' + stillSkipped.length + ' left out'
 		+ (applied.conflicted.length ? ', ' + applied.conflicted.length + ' with conflict markers still to resolve' : '') + '.\n';
-	E.git(['commit', '--quiet', '-m', msg], { cwd: repoDir });
+	// Use the person's own git identity; fall back to a neutral one (e.g., on a CI runner)
+	let hasIdentity = String(E.git(['config', 'user.email'], { cwd: repoDir, allowFail: true }).stdout || '').trim() !== '';
+	let identity = hasIdentity ? {} : {
+		GIT_AUTHOR_NAME: 'Typos upstream apply', GIT_AUTHOR_EMAIL: 'noreply@users.noreply.github.com',
+		GIT_COMMITTER_NAME: 'Typos upstream apply', GIT_COMMITTER_EMAIL: 'noreply@users.noreply.github.com'
+	};
+	E.git(['commit', '--quiet', '-m', msg], { cwd: repoDir, env: identity });
 
 	console.log('Branch ' + branch + ': ' + applied.written.length + ' files written, ' + applied.removed.length + ' removed.');
 	if (applied.conflicted.length) {
