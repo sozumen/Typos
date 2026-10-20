@@ -245,12 +245,14 @@ jobs:
         if: matrix.arch == 'x64'
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          trap { Write-Host "::error title=$($MyInvocation.MyCommand.Name) step::$($_.Exception.Message -replace "`r?`n",'%0A')"; exit 1 }
           $p = Start-Process -FilePath $env:INSTALLER -ArgumentList '/S','/CurrentUser' -Wait -PassThru
           "Installer exit code: $($p.ExitCode)"
           $dir = Join-Path $env:LOCALAPPDATA 'Typos'
           if (-not (Test-Path (Join-Path $dir 'zotero.exe'))) {
-            Get-ChildItem $env:LOCALAPPDATA | Format-Table Name
-            throw "zotero.exe is not in $dir"
+            $where = (Get-ChildItem $env:LOCALAPPDATA, $env:ProgramFiles -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*Typos*' -or $_.Name -like '*Zotero*' } | ForEach-Object { $_.FullName }) -join '; '
+            throw "Installer exit code $($p.ExitCode); zotero.exe is not in $dir. Typos/Zotero folders found: $where"
           }
           foreach ($f in 'updater.exe','xul.dll','application.ini','uninstall\helper.exe') {
             if (-not (Test-Path (Join-Path $dir $f))) { throw "$f is missing from the install" }
@@ -272,6 +274,8 @@ jobs:
         if: matrix.arch == 'x64'
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          trap { Write-Host "::error title=$($MyInvocation.MyCommand.Name) step::$($_.Exception.Message -replace "`r?`n",'%0A')"; exit 1 }
           $dir = Join-Path $env:LOCALAPPDATA 'Typos'
           $profile = Join-Path $env:RUNNER_TEMP 'smoke-profile'
           New-Item -ItemType Directory -Force -Path $profile | Out-Null
@@ -297,6 +301,8 @@ jobs:
         if: matrix.arch == 'x64'
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          trap { Write-Host "::error title=$($MyInvocation.MyCommand.Name) step::$($_.Exception.Message -replace "`r?`n",'%0A')"; exit 1 }
           $dir = Join-Path $env:LOCALAPPDATA 'Typos'
           $un = Join-Path $dir 'uninstall\helper.exe'
           $p = Start-Process -FilePath $un -ArgumentList '/S' -Wait -PassThru
