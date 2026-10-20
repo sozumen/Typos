@@ -1,0 +1,20 @@
+#!/bin/bash
+# Run a command; if it fails, copy the end of its output into a GitHub error annotation, so the
+# reason shows on the run summary page and through the API (not only in the full log).
+#
+# Usage: ci-run "title" command [args...]
+title=$1
+shift
+log=$(mktemp)
+set +e
+"$@" 2>&1 | tee "$log"
+status=${PIPESTATUS[0]}
+set -e
+if [ "$status" -ne 0 ]; then
+	tail_text=$(tail -n 60 "$log" | tr -d '\r' | cut -c1-400)
+	# Annotation messages need %, CR and LF escaped
+	tail_text=${tail_text//'%'/'%25'}
+	tail_text=${tail_text//$'\n'/'%0A'}
+	echo "::error title=$title (exit $status)::$tail_text"
+fi
+exit "$status"

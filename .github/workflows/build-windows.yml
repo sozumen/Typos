@@ -94,17 +94,17 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Check the tests pass first
-        run: node --test fork/test/*.test.js
+        run: .github/scripts/ci-run 'Fast tests' node --test fork/test/*.test.js
 
       - uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Install Node modules
-        run: npm install
+        run: .github/scripts/ci-run 'npm install' npm install
 
       - name: Build
-        run: npm run build
+        run: .github/scripts/ci-run 'npm run build' npm run build
         env:
           # Needed by the document-worker Webpack build
           NODE_OPTIONS: --openssl-legacy-provider
@@ -113,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/release-src"
-          app/scripts/prepare_build \
+          .github/scripts/ci-run 'prepare_build' app/scripts/prepare_build \
             -s build \
             -o "$RUNNER_TEMP/release-src" \
             -c release \
@@ -174,8 +174,8 @@ jobs:
       - name: Download build tools
         shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr '{0}'
         run: |
-          app/scripts/fetch_rcedit
-          app/scripts/fetch_resource_hacker
+          .github/scripts/ci-run 'fetch_rcedit' app/scripts/fetch_rcedit
+          .github/scripts/ci-run 'fetch_resource_hacker' app/scripts/fetch_resource_hacker
 
           # NSIS plug-ins (Mozilla's builds, as the Zotero installer uses); the next step checks them
           tmp=$(cygpath -u "$RUNNER_TEMP")
@@ -203,7 +203,7 @@ jobs:
 
       - name: Fetch Zotero's prebuilt launcher and updater
         shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr '{0}'
-        run: app/scripts/fetch_lfs_upstream app/win/zotero.exe.tar.xz app/win/updater.exe.tar.xz
+        run: .github/scripts/ci-run 'fetch_lfs_upstream' app/scripts/fetch_lfs_upstream app/win/zotero.exe.tar.xz app/win/updater.exe.tar.xz
 
       - name: Build
         shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr '{0}'
@@ -212,7 +212,7 @@ jobs:
           mkdir -p "$src"
           tar -C "$src" -xf "$(cygpath -u "$RUNNER_TEMP")/typos-source.tar"
           test "$(cat "$src/version")" = "$VERSION"
-          app/build.sh -d "$src" -p w -a ${{ matrix.arch }}
+          .github/scripts/ci-run 'app/build.sh' app/build.sh -d "$src" -p w -a ${{ matrix.arch }}
           ls -l app/dist
 
       - name: Check the installer was made
