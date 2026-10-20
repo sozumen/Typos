@@ -305,7 +305,12 @@ jobs:
             throw "Typos did not answer on its local port within three minutes (zotero processes running: '$running')"
           }
           'Typos started and answered.'
-          $titles = (Get-Process -Name zotero -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | ForEach-Object { $_.MainWindowTitle }) -join '; '
+          # The port answers while the first-run progress window may still be up; wait for the main window
+          for ($i = 0; $i -lt 40; $i++) {
+            $titles = (Get-Process -Name zotero -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | ForEach-Object { $_.MainWindowTitle }) -join '; '
+            if ($titles -match 'Typos') { break }
+            Start-Sleep -Seconds 3
+          }
           "Window title: $titles"
           if ($titles -notmatch 'Typos') { throw "The main window title doesn't say Typos: '$titles'" }
           Get-Process -Name zotero -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
