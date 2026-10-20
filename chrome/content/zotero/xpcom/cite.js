@@ -678,6 +678,7 @@ Zotero.Cite.System.prototype = {
 			}
 		}
 		
+		Zotero.Multilingual.applyToCSLItem(zoteroItem, cslItem);
 		Zotero.ClassicalAbbreviations.applyToCSLItem(zoteroItem, cslItem, this.abbreviations || undefined);
 		
 		return cslItem;

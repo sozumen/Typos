@@ -293,3 +293,6 @@ pref("browser.theme.toolbar-theme", 2);
 
 // Need to enable -moz-context-properties for SVG context properties to work
 pref("svg.context-properties.content.enabled", true);
+
+// Per-field languages: which variants citations use (JSON; see xpcom/multilingual/)
+pref("extensions.zotero.multilingual.citation", "");

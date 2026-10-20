@@ -135,6 +135,8 @@ const xpcomFilesLocal = [
 	'cleanup/criticalEditions',
 	'cleanup/workMerge',
 	'cleanup/cleanup',
+	'multilingual/multilingualCore',
+	'multilingual/multilingual',
 	'id',
 	'integration',
 	'locale',

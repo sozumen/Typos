@@ -153,8 +153,14 @@ Zotero.Creators = new function () {
 		
 		Zotero.debug("Purging creator tables");
 		
+		// Typos: variants of creators (per-field languages) use creators too
+		var multilingual = await Zotero.Multilingual.waitReady();
+		var altSQL = multilingual
+			? " AND creatorID NOT IN (SELECT creatorID FROM itemCreatorsAlt)"
+				+ " AND creatorID NOT IN (SELECT creatorID FROM itemCreatorsMain)"
+			: "";
 		var sql = 'SELECT creatorID FROM creators WHERE creatorID NOT IN '
-			+ '(SELECT creatorID FROM itemCreators)';
+			+ '(SELECT creatorID FROM itemCreators)' + altSQL;
 		var toDelete = await Zotero.DB.columnQueryAsync(sql);
 		if (toDelete.length) {
 			// Clear creator entries in internal array
@@ -164,7 +170,7 @@ Zotero.Creators = new function () {
 			
 			await Zotero.DB.executeTransaction(async function () {
 				var sql = "DELETE FROM creators WHERE creatorID NOT IN "
-					+ "(SELECT creatorID FROM itemCreators)";
+					+ "(SELECT creatorID FROM itemCreators)" + altSQL;
 				await Zotero.DB.queryAsync(sql, [], { ignoreDBLock: true });
 			}, { disableForeignKeys: true });
 		}

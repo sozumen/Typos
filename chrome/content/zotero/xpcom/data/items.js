@@ -1370,8 +1370,12 @@ Zotero.Items = function () {
 		}
 		
 		await Zotero.DB.executeTransaction(async function () {
+			// Typos: variants of fields (per-field languages) use values too
 			let sql = "DELETE FROM itemDataValues WHERE valueID NOT IN "
 				+ "(SELECT valueID FROM itemData)";
+			if (await Zotero.Multilingual.waitReady()) {
+				sql += " AND valueID NOT IN (SELECT valueID FROM itemDataAlt)";
+			}
 			await Zotero.DB.queryAsync(sql, [], { ignoreDBLock: true });
 		}, { disableForeignKeys: true });
 		
