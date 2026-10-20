@@ -185,11 +185,14 @@ jobs:
           # NSIS plug-ins (Mozilla's builds, as the Zotero installer uses); the next step checks them
           tmp=$(cygpath -u "$RUNNER_TEMP")
           mkdir -p "$tmp/nsis-plugins"
-          (cd "$tmp/nsis-plugins" && "$OLDPWD/app/win/download-nsis-plugins") || echo "Plug-in download reported an error; checking what arrived"
+          (cd "$tmp/nsis-plugins" && "$OLDPWD/.github/scripts/ci-run" 'download-nsis-plugins' "$OLDPWD/app/win/download-nsis-plugins") || echo "Plug-in download reported an error; checking what arrived"
+          echo "::notice title=NSIS plug-in download::$(cd "$tmp/nsis-plugins" && find . -type f -printf '%p %s bytes%%0A' 2>&1)"
 
       - name: Install NSIS plug-ins
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          trap { Write-Host "::error title=Install NSIS plug-ins::$($_.Exception.Message -replace "`r?`n",'%0A')"; exit 1 }
           $dest = 'C:\Program Files (x86)\NSIS\Plugins\x86-unicode'
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
           $found = Get-ChildItem -Path "$env:RUNNER_TEMP\nsis-plugins\Plugins" -Filter *.dll
