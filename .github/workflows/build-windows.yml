@@ -182,11 +182,9 @@ jobs:
           .github/scripts/ci-run 'fetch_rcedit' app/scripts/fetch_rcedit
           .github/scripts/ci-run 'fetch_resource_hacker' app/scripts/fetch_resource_hacker
 
-          # NSIS plug-ins (Mozilla's builds, as the Zotero installer uses); the next step checks them
+          # NSIS plug-ins (Mozilla's builds, as the Zotero installer uses)
           tmp=$(cygpath -u "$RUNNER_TEMP")
-          mkdir -p "$tmp/nsis-plugins"
-          (cd "$tmp/nsis-plugins" && "$OLDPWD/.github/scripts/ci-run" 'download-nsis-plugins' "$OLDPWD/app/win/download-nsis-plugins") || echo "Plug-in download reported an error; checking what arrived"
-          echo "::notice title=NSIS plug-in download::$(cd "$tmp/nsis-plugins" && find . -type f -printf '%p %s bytes%%0A' 2>&1)"
+          .github/scripts/ci-run 'fetch_nsis_plugins' app/scripts/fetch_nsis_plugins "$tmp/nsis-plugins/Plugins"
 
       - name: Install NSIS plug-ins
         shell: pwsh

@@ -1,0 +1,55 @@
+#!/bin/bash
+# Download the NSIS plug-ins the Windows installer needs (Mozilla's builds, as Zotero uses) into
+# the directory given (default ./Plugins), trying several sources, and check each really is a DLL.
+#
+# Usage: fetch_nsis_plugins [dir]
+set -uo pipefail
+
+dest="${1:-Plugins}"
+mkdir -p "$dest"
+
+HG_REV=052d53200cf8
+sources=(
+	"https://hg.mozilla.org/mozilla-central/raw-file/$HG_REV/other-licenses/nsis/Plugins"
+	"https://hg-edge.mozilla.org/mozilla-central/raw-file/$HG_REV/other-licenses/nsis/Plugins"
+	"https://raw.githubusercontent.com/mozilla-firefox/firefox/main/other-licenses/nsis/Plugins"
+	"https://raw.githubusercontent.com/mozilla/gecko-dev/master/other-licenses/nsis/Plugins"
+)
+plugins="AccessControl AppAssocReg ApplicationID InvokeShellVerb ShellLink UAC"
+
+is_dll() {
+	[ -s "$1" ] && [ "$(head -c 2 "$1")" = "MZ" ]
+}
+
+failed=0
+for plugin in $plugins; do
+	ok=0
+	for base in "${sources[@]}"; do
+		code=$(curl -sSL --retry 2 -o "$dest/$plugin.dll" -w '%{http_code}' "$base/$plugin.dll" 2> "$dest/curl-error.txt") || true
+		if is_dll "$dest/$plugin.dll"; then
+			echo "$plugin.dll: OK from $base"
+			ok=1
+			break
+		fi
+		echo "$plugin.dll: no good from $base (HTTP $code $(head -c 200 "$dest/curl-error.txt"))"
+		rm -f "$dest/$plugin.dll"
+	done
+	# AccessControl isn't in Zotero's own list of required plug-ins
+	[ $ok -eq 1 ] || [ "$plugin" = AccessControl ] || failed=1
+done
+rm -f "$dest/curl-error.txt"
+
+# nsProcess, from the NSIS plug-in site via Zotero's copy
+tmp=$(mktemp -d)
+if curl -fsSL --retry 2 -o "$tmp/NsProcess.zip" https://download.zotero.org/dev/win/NsProcess-1.6.zip \
+		&& (cd "$tmp" && 7z e -y NsProcess.zip "Plugin/nsProcessW.dll" > /dev/null) \
+		&& is_dll "$tmp/nsProcessW.dll"; then
+	mv "$tmp/nsProcessW.dll" "$dest/nsProcess.dll"
+	echo "nsProcess.dll: OK"
+else
+	echo "nsProcess.dll: download failed"
+	failed=1
+fi
+rm -rf "$tmp"
+
+exit $failed
