@@ -255,14 +255,14 @@ jobs:
             $logs = Get-ChildItem (Join-Path $env:ProgramFiles 'Typos') -Recurse -Filter *.log -ErrorAction SilentlyContinue | ForEach-Object { "$($_.FullName):`n" + ((Get-Content $_.FullName -Tail 30) -join "`n") }
             throw "Installer exit code $($p.ExitCode); zotero.exe is not in $dir. Typos/Zotero folders found: $where`n$($logs -join "`n")"
           }
-          foreach ($f in 'updater.exe','xul.dll','application.ini','uninstall\helper.exe') {
+          foreach ($f in 'updater.exe','xul.dll','app\application.ini','uninstall\helper.exe') {
             if (-not (Test-Path (Join-Path $dir $f))) { throw "$f is missing from the install" }
           }
           $vi = (Get-Item (Join-Path $dir 'zotero.exe')).VersionInfo
           "ProductName=$($vi.ProductName) ProductVersion=$($vi.ProductVersion) FileDescription=$($vi.FileDescription) Company=$($vi.CompanyName)"
           if ($vi.ProductName -ne 'Typos') { throw "zotero.exe still says ProductName '$($vi.ProductName)'" }
           if ($vi.ProductVersion -ne $env:VERSION) { throw "zotero.exe ProductVersion is '$($vi.ProductVersion)', expected $env:VERSION" }
-          $ini = Get-Content (Join-Path $dir 'application.ini') -Raw
+          $ini = Get-Content (Join-Path $dir 'app\application.ini') -Raw
           if ($ini -notmatch "Version=$([regex]::Escape($env:VERSION))") { throw 'application.ini has the wrong version' }
           if ($ini -notmatch 'Name=Typos') { throw 'application.ini does not say Typos' }
 
