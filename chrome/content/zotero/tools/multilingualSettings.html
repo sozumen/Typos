@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!--
+    Which language citations and bibliographies use for titles, names, publishers and other
+    values that have variants in several languages. The logic is in xpcom/multilingual/.
+
+    This file is part of the Zotero-derived application and is licensed under the
+    GNU Affero General Public License, version 3 or later.
+-->
+<html id="multilingual-settings" windowtype="zotero:multilingual-settings">
+	<head>
+		<meta charset="utf-8">
+		<title data-l10n-id="multilingual-settings-title"></title>
+		<link href="chrome://zotero-platform/content/zotero.css" rel="stylesheet"/>
+	</head>
+	<body>
+		<main id="ml-main">
+			<h1 data-l10n-id="multilingual-settings-heading"></h1>
+			<p data-l10n-id="multilingual-settings-intro"></p>
+			<div id="ml-categories"></div>
+			<fieldset class="ml-box">
+				<legend data-l10n-id="multilingual-settings-migrate-heading"></legend>
+				<p data-l10n-id="multilingual-settings-migrate-description"></p>
+				<div class="ml-row">
+					<button type="button" id="ml-migrate" data-l10n-id="multilingual-settings-migrate"></button>
+					<span id="ml-migrate-status" role="status"></span>
+				</div>
+			</fieldset>
+			<div class="ml-row ml-footer">
+				<button type="button" id="ml-save" class="ml-accent" data-l10n-id="multilingual-settings-save"></button>
+				<button type="button" id="ml-cancel" data-l10n-id="multilingual-settings-cancel"></button>
+				<span id="ml-status" role="status"></span>
+			</div>
+		</main>
+		<script src="chrome://zotero/content/include.js"></script>
+		<script src="multilingualSettings.js"></script>
+	</body>
+</html>

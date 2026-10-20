@@ -24,6 +24,25 @@ info-box {
 		color: var(--fill-secondary);
 	}
 
+	// Per-field languages (Typos)
+	.field-language-badge {
+		flex: 0 0 auto;
+		align-self: center;
+		margin-inline-start: 6px;
+		padding: 0 5px;
+		border-radius: 3px;
+		font-size: 0.85em;
+		color: var(--fill-secondary);
+		background: var(--fill-quinary);
+	}
+
+	.variant-row {
+		.variant-label {
+			color: var(--fill-secondary);
+			padding-inline-start: 18px;
+		}
+	}
+
 	.drag-hidden-creator {
 		opacity: 0;
 	}

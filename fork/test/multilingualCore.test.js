@@ -95,3 +95,30 @@ test('names: a missing list or position is skipped, and orig mode changes nothin
 	assert.equal(M.substituteNames(item, entries, settings({ creators: { mode: 'variant', languages: ['en'] } })), false);
 	assert.equal(M.substituteNames(item, entries, settings({})), false);
 });
+
+
+test('planAlternates turns an import\'s Extra data into operations', () => {
+	let alternates = {
+		v: 1,
+		fields: { title: { en: 'The Instructor', 'bad tag': 'x' }, court: { ja: '' }, unknown: { en: 'y' } },
+		creators: [
+			{ index: 0, creatorType: 'author', languageTag: 'ja', firstName: 'ヨーコ', lastName: '小野', fieldMode: 0 },
+			{ index: 5, creatorType: 'author', languageTag: 'ja', firstName: '', lastName: 'Gone', fieldMode: 1 },
+			{ index: 1, creatorType: 'author', languageTag: 'ja', lastName: 'Ono Group', fieldMode: 1 }
+		],
+		mainLang: { title: 'de', 'creator:0': 'en', 'creator:9': 'en', unknown: 'fr' }
+	};
+	let plan = M.planAlternates(alternates, {
+		resolveField: name => name === 'unknown' ? null : name,
+		creatorCount: 2
+	});
+	assert.deepEqual(plan.fieldLanguages, [{ field: 'title', language: 'de' }]);
+	assert.deepEqual(plan.variants, [{ field: 'title', language: 'en', value: 'The Instructor' }]);
+	assert.deepEqual(plan.creatorLanguages, [{ index: 0, language: 'en' }]);
+	assert.deepEqual(plan.creatorVariants.map(v => [v.index, v.language, v.name.lastName, v.name.fieldMode]), [
+		[0, 'ja', '小野', 0],
+		[1, 'ja', 'Ono Group', 1]
+	]);
+	assert.ok(plan.skipped.length >= 5);
+	assert.deepEqual(M.planAlternates(null, { resolveField: x => x, creatorCount: 0 }).variants, []);
+});

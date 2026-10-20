@@ -137,6 +137,7 @@ const xpcomFilesLocal = [
 	'cleanup/cleanup',
 	'multilingual/multilingualCore',
 	'multilingual/multilingual',
+	'multilingual/multilingualMenu',
 	'id',
 	'integration',
 	'locale',

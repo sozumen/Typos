@@ -591,6 +591,30 @@ Zotero.JurismImport = new function () {
 	}
 
 
+	/**
+	 * Third pass: languages and variants go into the per-field language tables
+	 * (they were written to Extra by the mapping, which is also what plain Zotero can read)
+	 */
+	async function _saveLanguages(entries, report) {
+		if (!Zotero.Multilingual?.isReady()) return;
+		for (let entry of entries) {
+			if (!entry.item || !entry.src?.alternates) continue;
+			try {
+				let result = await Zotero.Multilingual.migrateItemFromExtra(entry.item);
+				if (!result) continue;
+				report.counts.languageItems = (report.counts.languageItems || 0) + 1;
+				for (let s of result.skipped) {
+					report.warnings.push(`${entry.key}: language data skipped (${s})`);
+				}
+			}
+			catch (e) {
+				Zotero.logError(e);
+				report.warnings.push(`${entry.key}: couldn't store language data (${e.message})`);
+			}
+		}
+	}
+
+
 	// Exposed for tests only
 	this._internals = { readSource: _readSource, toEntry: _toEntry, schema: _schema };
 	
@@ -672,6 +696,7 @@ Zotero.JurismImport = new function () {
 				.map(src => _toEntry(src, schema, report, options));
 			await _saveEntries(libraryID, entries, options, report, true);
 			await _saveRelations(libraryID, entries, report, options);
+			await _saveLanguages(entries, report);
 		}
 		finally {
 			await cleanup();

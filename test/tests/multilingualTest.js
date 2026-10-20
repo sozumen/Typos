@@ -237,4 +237,49 @@ describe("Zotero.Multilingual", function () {
 			assert.equal(cslItem.title, 'Fallback');
 		});
 	});
+	
+	describe("data an import left in Extra", function () {
+		async function bookWithExtraData() {
+			let item = await createBook('Der Pädagoge');
+			let line = Zotero.JurismMapping.serializeAlternates({
+				fields: { title: { en: 'The Instructor' }, extra: { en: 'ignored' }, noSuchField: { en: 'x' } },
+				creators: [{ index: 0, creatorType: 'author', languageTag: 'ja', firstName: 'ヨーコ', lastName: '小野', fieldMode: 0 }],
+				mainLang: { title: 'de', 'creator:0': 'en' }
+			});
+			item.setField('extra', 'keep: me\n' + line);
+			await item.saveTx();
+			return item;
+		}
+		
+		it("should move languages and variants into the tables and remove the line", async function () {
+			let item = await bookWithExtraData();
+			assert.isTrue(Zotero.Multilingual.hasAlternatesInExtra(item));
+			let result = await Zotero.Multilingual.migrateItemFromExtra(item);
+			assert.equal(result.stored, 4);
+			assert.lengthOf(result.skipped, 2);
+			assert.equal(Zotero.Multilingual.getFieldLanguage(item, 'title'), 'de');
+			assert.equal(Zotero.Multilingual.getVariants(item, 'title').en, 'The Instructor');
+			assert.equal(Zotero.Multilingual.getCreatorLanguage(item, 0), 'en');
+			assert.equal(Zotero.Multilingual.getCreatorVariants(item, 0).ja.lastName, '小野');
+			assert.equal(item.getField('extra'), 'keep: me');
+		});
+		
+		it("should leave items without the line alone", async function () {
+			let item = await createBook('Nothing to move');
+			assert.isNull(await Zotero.Multilingual.migrateItemFromExtra(item));
+		});
+		
+		it("should convert a whole library and write a log", async function () {
+			let item = await bookWithExtraData();
+			let result = await Zotero.Multilingual.migrateFromExtra({ libraryID });
+			assert.isAtLeast(result.items, 1);
+			assert.ok(result.logPath);
+			assert.isTrue(await IOUtils.exists(result.logPath));
+			let log = await IOUtils.readJSON(result.logPath);
+			assert.include(log.items.map(i => i.key), item.key);
+			assert.include(log.items.find(i => i.key == item.key).extraBefore, 'mlz-alternates');
+			assert.equal(Zotero.Multilingual.getVariants(item, 'title').en, 'The Instructor');
+			assert.equal(item.getField('extra'), 'keep: me');
+		});
+	});
 });

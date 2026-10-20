@@ -175,7 +175,71 @@
 	}
 
 
+	/**
+	 * Turn the "mlz-alternates" data an import left in Extra into the operations that store it in
+	 * the language tables
+	 *
+	 * @param {Object} alternates - See JurismMapping.serializeAlternates()
+	 * @param {Object} context
+	 * @param {Function} context.resolveField - (fieldName) => the name the item's type uses for it
+	 *     and that can have languages, or null
+	 * @param {Number} context.creatorCount
+	 * @return {{ fieldLanguages: Object[], variants: Object[], creatorLanguages: Object[],
+	 *     creatorVariants: Object[], skipped: String[] }}
+	 */
+	function planAlternates(alternates, { resolveField, creatorCount }) {
+		let plan = { fieldLanguages: [], variants: [], creatorLanguages: [], creatorVariants: [], skipped: [] };
+		if (!alternates) return plan;
+		for (let [name, tag] of Object.entries(alternates.mainLang || {})) {
+			let language = normalizeTag(tag);
+			let m = /^creator:(\d+)$/.exec(name);
+			if (m) {
+				let index = parseInt(m[1]);
+				if (language && index < creatorCount) plan.creatorLanguages.push({ index, language });
+				else plan.skipped.push(`${name}: ${tag}`);
+				continue;
+			}
+			let field = resolveField(name);
+			if (field && language) plan.fieldLanguages.push({ field, language });
+			else plan.skipped.push(`${name}: ${tag}`);
+		}
+		for (let [name, byTag] of Object.entries(alternates.fields || {})) {
+			let field = resolveField(name);
+			for (let [tag, value] of Object.entries(byTag || {})) {
+				let language = normalizeTag(tag);
+				if (field && language && String(value || '').trim()) {
+					plan.variants.push({ field, language, value: String(value).trim() });
+				}
+				else {
+					plan.skipped.push(`${name} (${tag})`);
+				}
+			}
+		}
+		for (let c of alternates.creators || []) {
+			let language = normalizeTag(c.languageTag);
+			let index = parseInt(c.index);
+			let lastName = c.lastName || c.name || '';
+			if (language && index >= 0 && index < creatorCount && (lastName || c.firstName)) {
+				plan.creatorVariants.push({
+					index,
+					language,
+					name: {
+						lastName,
+						firstName: c.fieldMode === 1 ? '' : c.firstName || '',
+						fieldMode: c.fieldMode === 1 ? 1 : 0
+					}
+				});
+			}
+			else {
+				plan.skipped.push(`creator ${c.index} (${c.languageTag})`);
+			}
+		}
+		return plan;
+	}
+
+
 	let api = {
+		planAlternates,
 		DEFAULT_TAGS,
 		CATEGORIES,
 		MODES,

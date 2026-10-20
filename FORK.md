@@ -66,11 +66,12 @@ the relation namespace URI).
 | 5 | Abbreviation lists (classics, journals, series…), selectable per style and per document | Done. Not runnable-tested here | `xpcom/abbreviationIndex.js`, `abbreviationProfiles.js`, `classicalAbbreviations.js`, Preferences → Cite |
 | 6 | **Visual Style Editor**: edit any CSL style as a tree, with live preview | Done. Engine tested; UI only in a simulated browser | `xpcom/styleEditor/`, `tools/visualStyleEditor.*`, `docs/STYLE-EDITOR.md` |
 | 7 | **Write a Style with AI** from a style manual or example citations (Claude, your own API key) | Done. Never called the real API | `xpcom/styleAI/`, `tools/styleAI.*`, `docs/STYLE-EDITOR.md` |
+| 9 | **Per-field languages** (Jurism/MLZ style): language and variants for any text field and name, used in the Info pane and in citations | Data layer and its in-app tests pass in CI. The Info pane menus, rows and settings window have never been looked at | `xpcom/multilingual/`, `tools/multilingualSettings.*`, `elements/itemBox.js`, Tools → Citation Languages…, `docs/MULTILINGUAL.md` |
 | 8 | **Library cleanup**: critical editions imported as Classic Works → proper records and relationships; merge duplicate works keeping titles as languages | Done. See in-app test status below | `xpcom/cleanup/`, `tools/cleanup.*`, Tools → Library Cleanup…, `docs/CLEANUP.md` |
 
 Dropped from Juris-M, as requested: legal citation (jurisdiction/court tables, legal item
-types' special fields). Multilingual: **data is preserved** on import (see below) but there is no
-multilingual UI.
+types' special fields). Multilingual: languages and variants are stored in tables shaped like
+Jurism's (see 9 below).
 
 ### 1. Classic Work item type
 
@@ -177,6 +178,18 @@ records linked to a new Classic Work, volume and multi-volume record. "Siblings"
 way to the same item) are listed in the Relationships section. Tools → **Merge Selected Works…**
 merges duplicate works and keeps the other titles as alternate-language titles. Details and
 limits: `docs/CLEANUP.md`.
+
+### 9. Per-field languages
+
+Right-click a text field or a name in the Info pane: **Add Variant** adds a row for the value in
+another language; **Set Field Language** marks which language the main value is in. The same
+languages and variants live in tables with Jurism's names (`itemDataMain`, `itemDataAlt`,
+`itemCreatorsMain`, `itemCreatorsAlt`, `zlsTags`), created when Typos starts without changing
+Zotero's schema version. Tools → **Citation Languages…** chooses, for titles, names, publishers
+and everything else, whether citations use the original, a variant, or both, and in which
+language order; the default is the original, so nothing changes until you choose. Juris-M imports
+now store languages in the tables, and the same window can move language data an earlier import
+left in Extra. Details and limits: `docs/MULTILINGUAL.md`.
 
 ## Building and testing
 

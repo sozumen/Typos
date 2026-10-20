@@ -109,3 +109,9 @@ menu {
 		}
 	}
 }
+
+// Headers inside the Info pane's right-click menu ("Add Variant", "Set Field Language")
+menuitem.multilingual-menu-header {
+	font-weight: bold;
+	opacity: 1 !important;
+}

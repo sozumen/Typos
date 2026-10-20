@@ -779,7 +779,9 @@
 
 				rowData.oncontextmenu = onContextMenu;
 
-				this.addDynamicRow(rowLabel, rowData);
+				this._addLanguageBadge(rowData, fieldName);
+				let addedRow = this.addDynamicRow(rowLabel, rowData);
+				this._addVariantRows(addedRow, fieldName);
 				
 				let button, popup;
 				// In field merge mode, add a button to switch field versions
@@ -1253,7 +1255,237 @@
 			this._infoTable.appendChild(row);
 		}
 		
-		createContextMenuHandler(fieldName, getMenuPopup = null) {
+		//
+		// Per-field languages and variants (Typos)
+		//
+		
+		/**
+		 * @return {{ field: String }|{ creator: Number }|null} - null if the thing the menu was
+		 *     opened on can't have a language
+		 */
+		_languageTarget(target) {
+			if (!target || !this.item || !Zotero.Multilingual.isReady()) return null;
+			if (this._extraItems?.length || !this.item.isRegularItem()) return null;
+			if (typeof target == 'string') {
+				return Zotero.Multilingual.isSupportedField(this.item, target) ? { field: target } : null;
+			}
+			if (typeof target.creator == 'number') {
+				return target;
+			}
+			return null;
+		}
+		
+		_languageInfo(target) {
+			if (target.field) {
+				return {
+					current: Zotero.Multilingual.getFieldLanguage(this.item, target.field),
+					variants: Zotero.Multilingual.getVariants(this.item, target.field)
+				};
+			}
+			let variants = {};
+			for (let [tag, name] of Object.entries(
+				Zotero.Multilingual.getCreatorVariants(this.item, target.creator)
+			)) {
+				variants[tag] = Zotero.MultilingualCore.formatCreatorText(name);
+			}
+			return {
+				current: Zotero.Multilingual.getCreatorLanguage(this.item, target.creator),
+				variants
+			};
+		}
+		
+		_variantKey(target, tag) {
+			return `${this.item.id}|${target.field ?? 'creator-' + target.creator}|${tag}`;
+		}
+		
+		_decorateLanguageMenu(menupopup, target) {
+			if (!this.editable) return;
+			target = this._languageTarget(target);
+			if (!target) return;
+			// Only things that exist: an empty field or an unsaved creator row has nothing to translate
+			if (target.field && !this.item.getField(target.field)) return;
+			if (target.creator !== undefined && !this.item.getCreator(target.creator)) return;
+			let { current, variants } = this._languageInfo(target);
+			let pending = [...(this._pendingVariants || new Map()).values()]
+				.filter(v => v.itemID == this.item.id && v.name == (target.field ?? target.creator))
+				.map(v => v.tag);
+			Zotero.MultilingualMenu.decorate(menupopup, {
+				current,
+				variantTags: [...Object.keys(variants), ...pending],
+				onAddVariant: (tag) => {
+					if (!this._pendingVariants) this._pendingVariants = new Map();
+					this._pendingVariants.set(this._variantKey(target, tag), {
+						itemID: this.item.id, name: target.field ?? target.creator, tag
+					});
+					this._pendingFocus = this._variantKey(target, tag);
+					this._forceRenderAll();
+				},
+				onSetLanguage: async (tag) => {
+					try {
+						if (target.field) {
+							await Zotero.Multilingual.setFieldLanguage(this.item, target.field, tag);
+						}
+						else {
+							await Zotero.Multilingual.setCreatorLanguage(this.item, target.creator, tag);
+						}
+					}
+					catch (e) {
+						Zotero.logError(e);
+					}
+				}
+			});
+		}
+		
+		/** Show the language of a field or name after its value */
+		_addLanguageBadge(rowData, target) {
+			target = this._languageTarget(target);
+			if (!target) return;
+			let { current } = this._languageInfo(target);
+			if (!current) return;
+			let badge = document.createElement('span');
+			badge.className = 'field-language-badge';
+			badge.textContent = current;
+			rowData.appendChild(badge);
+		}
+		
+		/** Add a row for each variant of a field or name, after the row that has the main value */
+		_addVariantRows(row, target) {
+			target = this._languageTarget(target);
+			if (!target || !row) return;
+			let name = target.field ?? target.creator;
+			let { variants } = this._languageInfo(target);
+			let tags = new Set(Object.keys(variants));
+			for (let v of (this._pendingVariants || new Map()).values()) {
+				if (v.itemID == this.item.id && v.name == name) tags.add(v.tag);
+			}
+			let previous = row;
+			for (let tag of [...tags].sort()) {
+				let variantRow = this._createVariantRow(target, tag, variants[tag] || '');
+				previous.after(variantRow);
+				previous = variantRow;
+				if (this._pendingFocus == this._variantKey(target, tag)) {
+					let focusKey = this._pendingFocus;
+					this._pendingFocus = null;
+					setTimeout(() => {
+						let el = this._infoTable.querySelector(`.variant-value[data-variant-key="${focusKey}"]`);
+						el?.focus();
+					});
+				}
+			}
+		}
+		
+		_createVariantRow(target, tag, text) {
+			let key = this._variantKey(target, tag);
+			let name = target.field ?? target.creator;
+			
+			let label = document.createElement('div');
+			label.className = 'meta-label variant-label';
+			let labelText = document.createElement('label');
+			labelText.className = 'key';
+			labelText.textContent = tag;
+			label.appendChild(labelText);
+			
+			let data = document.createElement('div');
+			data.className = 'meta-data';
+			let valueElement = document.createXULElement('editable-text');
+			valueElement.classList.add('value', 'variant-value');
+			valueElement.setAttribute('tight', true);
+			valueElement.dataset.variantKey = key;
+			if (target.field && Zotero.ItemFields.isMultiline(target.field)) {
+				valueElement.setAttribute('multiline', true);
+			}
+			else {
+				valueElement.setAttribute('nowrap', true);
+			}
+			valueElement.value = text;
+			valueElement.dir = text ? 'auto' : Zotero.dir;
+			document.l10n.setAttributes(
+				valueElement,
+				target.field ? 'multilingual-variant-placeholder' : 'multilingual-variant-name-placeholder',
+				{ language: tag }
+			);
+			let committed = text;
+			valueElement.addEventListener('blur', async () => {
+				let newText = (valueElement.value || '').trim();
+				if (newText == committed) {
+					// Nothing typed in a new row: forget it
+					if (!newText && this._pendingVariants?.delete(key)) {
+						this._forceRenderAll();
+					}
+					return;
+				}
+				committed = newText;
+				try {
+					if (target.field) {
+						await Zotero.Multilingual.setVariant(this.item, target.field, tag, newText);
+					}
+					else {
+						await Zotero.Multilingual.setCreatorVariant(
+							this.item,
+							target.creator,
+							tag,
+							Zotero.MultilingualCore.parseCreatorText(newText)
+						);
+					}
+					this._pendingVariants?.delete(key);
+				}
+				catch (e) {
+					Zotero.logError(e);
+				}
+			});
+			valueElement.addEventListener('keydown', (event) => {
+				if (event.key == 'Escape') {
+					valueElement.value = committed;
+					valueElement.blur();
+				}
+				else if (event.key == 'Enter' && !event.shiftKey) {
+					event.preventDefault();
+					valueElement.blur();
+				}
+			});
+			data.appendChild(valueElement);
+			
+			if (this.editable) {
+				let removeButton = document.createXULElement('toolbarbutton');
+				removeButton.className = 'zotero-clicky zotero-clicky-minus show-on-hover no-display';
+				document.l10n.setAttributes(removeButton, 'multilingual-variant-remove');
+				removeButton.addEventListener('command', async () => {
+					this._pendingVariants?.delete(key);
+					committed = '';
+					try {
+						if (target.field) {
+							await Zotero.Multilingual.setVariant(this.item, target.field, tag, '');
+						}
+						else {
+							await Zotero.Multilingual.setCreatorVariant(this.item, target.creator, tag, null);
+						}
+					}
+					catch (e) {
+						Zotero.logError(e);
+					}
+					this._forceRenderAll();
+				});
+				data.appendChild(removeButton);
+			}
+			else {
+				valueElement.setAttribute('readonly', true);
+			}
+			
+			let row = document.createElement('div');
+			row.className = 'meta-row variant-row';
+			row.dataset.variantFor = String(name);
+			row.append(label, data);
+			return row;
+		}
+		
+		/**
+		 * @param {String} fieldName
+		 * @param {Function} [getMenuPopup]
+		 * @param {Object|String} [languageTarget] - What the "Add Variant" and "Set Field Language"
+		 *     sections of the menu act on: a field name, or { creator: index }. The field name
+		 *     is used if omitted.
+		 */
+		createContextMenuHandler(fieldName, getMenuPopup = null, languageTarget = undefined) {
 			return (event) => {
 				let menupopup = null;
 				if (!getMenuPopup) {
@@ -1262,6 +1494,7 @@
 				else {
 					menupopup = getMenuPopup(event);
 				}
+				this._decorateLanguageMenu(menupopup, languageTarget === undefined ? fieldName : languageTarget);
 				let targetInput = event.target.closest('editable-text')?._input;
 				if (!targetInput) {
 					targetInput = event.target.closest('input, textarea');
@@ -1490,12 +1723,12 @@
 					this._popupNode = firstlast;
 					let menupopup = this._id('zotero-creator-transform-menu');
 					return menupopup;
-				});
+				}, { creator: rowIndex });
 				optionsButton.addEventListener("command", onContextMenu);
 				rowData.oncontextmenu = onContextMenu;
 			}
 			else {
-				rowData.oncontextmenu = this.createContextMenuHandler(fieldName);
+				rowData.oncontextmenu = this.createContextMenuHandler(fieldName, null, { creator: rowIndex });
 			}
 			
 			this._creatorCount++;
@@ -1524,7 +1757,9 @@
 					this._swapClasses([...rowData.querySelectorAll(".show-without-hover")], "show-without-hover", "show-on-hover");
 				});
 			}
+			this._addLanguageBadge(rowData, { creator: rowIndex });
 			let row = this.addDynamicRow(rowLabel, rowData, before);
+			this._addVariantRows(row, { creator: rowIndex });
 
 			/**
 			 * Events handling creator drag-drop reordering
@@ -2107,6 +2342,8 @@
 				return;
 			}
 			this.item.removeCreator(index);
+			// Keep languages and variants with the creators that are left
+			Zotero.Multilingual.remapCreators(this.item, i => i == index ? null : (i > index ? i - 1 : i));
 			await this.item.saveTx({ undoAction: 'undo-action-remove-creator' });
 		}
 		
@@ -2731,6 +2968,7 @@
 				if (!oldCreator) {
 					return false;
 				}
+				Zotero.Multilingual.remapCreators(this.item, i => i == index ? null : (i > index ? i - 1 : i));
 				return this.item.removeCreator(index);
 			}
 			this.item.setCreator(index, fields);
@@ -2880,6 +3118,11 @@
 			}
 			let creator = this.item.getCreator(index);
 			let creators = this.item.getCreators();
+			// Where each creator ends up, for languages and variants
+			let order = creators.map((_, i) => i);
+			order.splice(newIndex, 0, index);
+			order.splice(newIndex < index ? index + 1 : index, 1);
+			Zotero.Multilingual.remapCreators(this.item, i => order.indexOf(i));
 			// Insert creator
 			creators.splice(newIndex, 0, creator);
 			// Remove creator from old location

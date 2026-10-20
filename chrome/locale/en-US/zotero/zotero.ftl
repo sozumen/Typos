@@ -1603,3 +1603,42 @@ cleanup-merge-button = Merge
 cleanup-merge-confirm-title = Merge works
 cleanup-merge-confirm = Merge { $count } works into one? The others are moved to the trash.
 cleanup-merge-done = Merged. { $count } titles kept as other languages.
+
+## Per-field languages (Info pane menus and rows)
+
+multilingual-menu-add-variant = Add Variant
+multilingual-menu-set-language = Set Field Language
+multilingual-menu-no-language = (none)
+multilingual-menu-other = Other…
+multilingual-prompt-title = Language
+multilingual-prompt-text = Language tag (for example ja, ja-Latn, zh-Hant):
+multilingual-variant-remove =
+    .tooltiptext = Remove this variant
+multilingual-variant-placeholder = Value in { $language }
+multilingual-variant-name-placeholder = Last, First
+
+menu-tools-multilingual-settings =
+    .label = Citation Languages…
+
+multilingual-settings-title = Citation Languages
+multilingual-settings-heading = Citation languages
+multilingual-settings-intro = Fields and names can have variants in other languages (right-click a field in the Info pane and choose Add Variant). Choose here which one citations and bibliographies use. Where a variant isn't available in any of the languages listed, the original is used.
+multilingual-settings-category-titles = Titles
+multilingual-settings-category-creators = Names
+multilingual-settings-category-publishers = Publishers and places
+multilingual-settings-category-other = Everything else
+multilingual-settings-mode = Use:
+multilingual-settings-mode-orig = The original
+multilingual-settings-mode-variant = A variant
+multilingual-settings-mode-both = The original, with a variant in brackets
+multilingual-settings-languages = Languages, in order:
+multilingual-settings-languages-placeholder =
+    .placeholder = for example: en, fr
+multilingual-settings-save = Save
+multilingual-settings-cancel = Cancel
+multilingual-settings-saved = Saved
+multilingual-settings-migrate-heading = Imported language data
+multilingual-settings-migrate-description = Items imported from Juris-M before per-field languages existed keep their languages and variants as a line in Extra. Move them into the language tables; the line is removed from Extra, and a record of what was in Extra is saved in the data folder.
+multilingual-settings-migrate = Move language data out of Extra
+multilingual-settings-migrate-progress = Moved { $done } of { $total }…
+multilingual-settings-migrate-done = Moved language data for { $items } items. { $skipped } values couldn't be used.

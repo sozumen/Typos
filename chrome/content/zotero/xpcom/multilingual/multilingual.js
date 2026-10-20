@@ -448,12 +448,29 @@ Zotero.Multilingual = new function () {
 	 * @param {Zotero.Item} item
 	 * @param {Function} mapIndex - (oldIndex) => new index, or null if the creator was removed
 	 */
-	this.remapCreators = async function (item, mapIndex) {
+	this.remapCreators = function (item, mapIndex) {
 		let main = _creatorMain.get(item.id);
 		let alt = _creatorAlt.get(item.id);
-		if (!main && !alt) return;
-		await Zotero.DB.executeTransaction(async () => {
-			let indexes = new Set([...(main ? main.keys() : []), ...(alt ? alt.keys() : [])]);
+		if (!main && !alt) return Promise.resolve();
+		let indexes = new Set([...(main ? main.keys() : []), ...(alt ? alt.keys() : [])]);
+		
+		// Update memory straight away, so two changes in a row each see the result of the one before
+		let remap = (map) => {
+			let out = new Map();
+			for (let [oldIndex, value] of map) {
+				let newIndex = mapIndex(oldIndex);
+				if (newIndex !== null && newIndex !== undefined && newIndex >= 0) out.set(newIndex, value);
+			}
+			return out;
+		};
+		for (let [map, store] of [[main, _creatorMain], [alt, _creatorAlt]]) {
+			if (!map) continue;
+			let remapped = remap(map);
+			remapped.size ? store.set(item.id, remapped) : store.delete(item.id);
+		}
+		
+		// Then the database (transactions run in the order they were started)
+		return Zotero.DB.executeTransaction(async () => {
 			// Move through a temporary range so two rows never collide
 			for (let table of ['itemCreatorsMain', 'itemCreatorsAlt']) {
 				await Zotero.DB.queryAsync(
@@ -463,7 +480,7 @@ Zotero.Multilingual = new function () {
 			for (let oldIndex of indexes) {
 				let newIndex = mapIndex(oldIndex);
 				for (let table of ['itemCreatorsMain', 'itemCreatorsAlt']) {
-					if (newIndex === null || newIndex === undefined) {
+					if (newIndex === null || newIndex === undefined || newIndex < 0) {
 						await Zotero.DB.queryAsync(
 							`DELETE FROM ${table} WHERE itemID=? AND orderIndex=?`, [item.id, oldIndex + 100000]
 						);
@@ -477,17 +494,128 @@ Zotero.Multilingual = new function () {
 				}
 			}
 		});
-		let remap = (map) => {
-			if (!map) return map;
-			let out = new Map();
-			for (let [oldIndex, value] of map) {
-				let newIndex = mapIndex(oldIndex);
-				if (newIndex !== null && newIndex !== undefined) out.set(newIndex, value);
+	};
+
+
+	//
+	// Moving the data an import left in Extra into the tables
+	//
+	// Importing from Juris-M keeps languages and variants as one "mlz-alternates:" line in Extra
+	// (or did, before Typos had its own tables). This moves them to the tables and removes the line.
+	//
+
+	const ALTERNATES_LABEL = 'mlz-alternates';
+
+	function _alternatesLineIndex(extra) {
+		return String(extra || '').split(/\r?\n/).findIndex(l => l.startsWith(ALTERNATES_LABEL + ':'));
+	}
+
+
+	this.hasAlternatesInExtra = function (item) {
+		return _alternatesLineIndex(item.getField('extra')) !== -1;
+	};
+
+
+	/**
+	 * Store what an item's "mlz-alternates" line holds, then remove the line
+	 *
+	 * @param {Zotero.Item} item
+	 * @return {Promise<{ stored: Number, skipped: String[] }|null>} - null if the item has no such line
+	 */
+	this.migrateItemFromExtra = async function (item) {
+		let extra = item.getField('extra');
+		let lineIndex = _alternatesLineIndex(extra);
+		if (lineIndex === -1) return null;
+		let alternates = Zotero.JurismMapping.parseAlternates(extra);
+		if (!alternates) return { stored: 0, skipped: ['unreadable'] };
+		let resolveField = (name) => {
+			let fieldID = Zotero.ItemFields.getID(name);
+			if (!fieldID) return null;
+			if (!Zotero.ItemFields.isValidForType(fieldID, item.itemTypeID)) {
+				fieldID = Zotero.ItemFields.getFieldIDFromTypeAndBase(item.itemTypeID, fieldID);
+				if (!fieldID) return null;
 			}
-			return out;
+			let fieldName = Zotero.ItemFields.getName(fieldID);
+			return this.isSupportedField(item, fieldName) ? fieldName : null;
 		};
-		if (main) _creatorMain.set(item.id, remap(main));
-		if (alt) _creatorAlt.set(item.id, remap(alt));
+		let plan = _core().planAlternates(alternates, {
+			resolveField,
+			creatorCount: item.numCreators()
+		});
+		let stored = 0;
+		for (let { field, language } of plan.fieldLanguages) {
+			await this.setFieldLanguage(item, field, language);
+			stored++;
+		}
+		for (let { field, language, value } of plan.variants) {
+			await this.setVariant(item, field, language, value);
+			stored++;
+		}
+		for (let { index, language } of plan.creatorLanguages) {
+			await this.setCreatorLanguage(item, index, language);
+			stored++;
+		}
+		for (let { index, language, name } of plan.creatorVariants) {
+			await this.setCreatorVariant(item, index, language, name);
+			stored++;
+		}
+		// Only now take the line out, so nothing is lost if storing failed part-way
+		let lines = extra.split(/\r?\n/);
+		lines.splice(lineIndex, 1);
+		item.setField('extra', lines.join('\n').replace(/^\s+|\s+$/g, ''));
+		await item.saveTx({ skipDateModifiedUpdate: true });
+		return { stored, skipped: plan.skipped };
+	};
+
+
+	/**
+	 * @param {Number} [libraryID] - All libraries if omitted
+	 * @return {Promise<{ items: Number, stored: Number, skipped: String[], logPath: String|null }>}
+	 */
+	this.migrateFromExtra = async function ({ libraryID = null, onProgress = null } = {}) {
+		await this.waitReady();
+		let extraID = Zotero.ItemFields.getID('extra');
+		let sql = "SELECT itemID FROM itemData JOIN itemDataValues USING (valueID) JOIN items USING (itemID) "
+			+ "WHERE fieldID=? AND value LIKE ? AND itemID NOT IN (SELECT itemID FROM deletedItems)";
+		let params = [extraID, '%' + ALTERNATES_LABEL + ':%'];
+		if (libraryID) {
+			sql += " AND libraryID=?";
+			params.push(libraryID);
+		}
+		let ids = await Zotero.DB.columnQueryAsync(sql, params);
+		let result = { items: 0, stored: 0, skipped: [], logPath: null };
+		let log = { date: new Date().toISOString(), items: [] };
+		for (let [i, id] of ids.entries()) {
+			let item = await Zotero.Items.getAsync(id);
+			if (!item) continue;
+			let before = item.getField('extra');
+			try {
+				let r = await this.migrateItemFromExtra(item);
+				if (!r) continue;
+				result.items++;
+				result.stored += r.stored;
+				for (let s of r.skipped) result.skipped.push(`${item.key}: ${s}`);
+				log.items.push({ key: item.key, libraryID: item.libraryID, extraBefore: before });
+			}
+			catch (e) {
+				Zotero.logError(e);
+				result.skipped.push(`${item.key}: ${e.message}`);
+			}
+			onProgress?.({ done: i + 1, total: ids.length });
+		}
+		if (log.items.length) {
+			try {
+				let dir = PathUtils.join(Zotero.DataDirectory.dir, 'typos-multilingual');
+				await IOUtils.makeDirectory(dir, { createAncestors: true, ignoreExisting: true });
+				let stamp = log.date.replace(/[-:]/g, '').replace(/\..*$/, '').replace('T', '-');
+				result.logPath = PathUtils.join(dir, `from-extra-${stamp}.json`);
+				await IOUtils.writeJSON(result.logPath, log);
+			}
+			catch (e) {
+				Zotero.logError(e);
+			}
+		}
+		return result;
 	};
 
 
@@ -554,6 +682,22 @@ Zotero.Multilingual = new function () {
 		_settings = _core().normalizeSettings(settings);
 		Zotero.Prefs.set(PREF_CITATION, JSON.stringify(_settings));
 		return _settings;
+	};
+
+
+	this.openSettings = function (parentWindow = null) {
+		let existing = Services.wm.getMostRecentWindow('zotero:multilingual-settings');
+		if (existing) {
+			existing.focus();
+			return existing;
+		}
+		return Services.ww.openWindow(
+			parentWindow,
+			'chrome://zotero/content/tools/multilingualSettings.html',
+			'_blank',
+			'chrome,width=620,height=560,resizable,centerscreen',
+			null
+		);
 	};
 
 
