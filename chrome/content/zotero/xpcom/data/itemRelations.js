@@ -22,6 +22,7 @@ Zotero.ItemRelations = new function () {
 	 * - predicate: stored predicate (subject -> object)
 	 * - l10nID / inverseL10nID: Fluent IDs for the labels shown on the subject and on the object,
 	 *       e.g. "Critical edition of" / "Critical editions"
+	 * - siblingsL10nID: label for the group of siblings; takes the shared item's title as $title
 	 * - hierarchical: whether the type describes containment, so a tree view makes sense
 	 */
 	this.TYPES = {
@@ -29,30 +30,35 @@ Zotero.ItemRelations = new function () {
 			predicate: PREDICATE_PREFIX + ':partOf',
 			l10nID: 'item-relation-part-of',
 			inverseL10nID: 'item-relation-has-part',
+				siblingsL10nID: 'item-relation-siblings-part-of',
 			hierarchical: true
 		},
 		republicationOf: {
 			predicate: PREDICATE_PREFIX + ':republicationOf',
 			l10nID: 'item-relation-republication-of',
 			inverseL10nID: 'item-relation-republished-as',
+				siblingsL10nID: 'item-relation-siblings-republication-of',
 			hierarchical: false
 		},
 		criticalEditionOf: {
 			predicate: PREDICATE_PREFIX + ':criticalEditionOf',
 			l10nID: 'item-relation-critical-edition-of',
 			inverseL10nID: 'item-relation-has-critical-edition',
+				siblingsL10nID: 'item-relation-siblings-critical-edition-of',
 			hierarchical: false
 		},
 		translationOf: {
 			predicate: PREDICATE_PREFIX + ':translationOf',
 			l10nID: 'item-relation-translation-of',
 			inverseL10nID: 'item-relation-has-translation',
+				siblingsL10nID: 'item-relation-siblings-translation-of',
 			hierarchical: false
 		},
 		commentaryOn: {
 			predicate: PREDICATE_PREFIX + ':commentaryOn',
 			l10nID: 'item-relation-commentary-on',
 			inverseL10nID: 'item-relation-has-commentary',
+				siblingsL10nID: 'item-relation-siblings-commentary-on',
 			hierarchical: false
 		}
 	};
@@ -227,6 +233,35 @@ Zotero.ItemRelations = new function () {
 			let items = await _resolve(uris);
 			if (items.length) {
 				results.push({ typeKey, items });
+			}
+		}
+		return results;
+	};
+
+
+	/**
+	 * Siblings: items related to the same item in the same way
+	 *
+	 * Two critical editions of one work, two volumes of one multi-volume work, and two reprints of
+	 * one work are siblings. Nothing is stored for this; it is worked out from the relations the
+	 * items already have, so it can't go out of date.
+	 *
+	 * @param {Zotero.Item} item
+	 * @return {Promise<{ typeKey: String, parent: Zotero.Item, items: Zotero.Item[] }[]>} - Only
+	 *     groups that have at least one other item
+	 */
+	this.getSiblings = async function (item) {
+		let results = [];
+		for (let typeKey of this.getTypeKeys()) {
+			let predicate = this.TYPES[typeKey].predicate;
+			for (let parentURI of item.getRelationsByPredicate(predicate)) {
+				let parent = await Zotero.URI.getURIItem(parentURI);
+				if (!parent || parent.deleted) continue;
+				let subjects = await this._getIncomingURIs(parentURI, predicate);
+				let others = (await _resolve(subjects)).filter(other => other.id !== item.id);
+				if (others.length) {
+					results.push({ typeKey, parent, items: others });
+				}
 			}
 		}
 		return results;

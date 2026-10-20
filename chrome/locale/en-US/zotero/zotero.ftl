@@ -1306,6 +1306,11 @@ item-relation-translation-of = Translation of
 item-relation-has-translation = Translations
 item-relation-commentary-on = Commentary on
 item-relation-has-commentary = Commentaries
+item-relation-siblings-part-of = Other parts of { $title }
+item-relation-siblings-republication-of = Other republications of { $title }
+item-relation-siblings-critical-edition-of = Other critical editions of { $title }
+item-relation-siblings-translation-of = Other translations of { $title }
+item-relation-siblings-commentary-on = Other commentaries on { $title }
 undo-action-add-relationship = Add relationship
 undo-action-remove-relationship = Remove relationship
 
@@ -1535,3 +1540,66 @@ styleAI-notice-problems =
         [one] Written by Claude. 1 problem remains; see the status bar.
        *[other] Written by Claude. { $count } problems remain; see the status bar.
     }
+
+
+## Library cleanup
+
+menu-tools-library-cleanup =
+    .label = Library Cleanup…
+menu-tools-merge-works =
+    .label = Merge Selected Works…
+
+cleanup-title = Library Cleanup
+cleanup-heading = Library cleanup
+cleanup-intro = Each step finds items that need tidying and shows exactly what it would change. Nothing is changed until you press Apply, and every run can be undone.
+cleanup-step-heading = Step
+cleanup-scan = Find items
+cleanup-scanning = Looking through your library…
+cleanup-error = Something went wrong: { $message }
+cleanup-step-critical-editions = Critical editions imported as Classic Works
+cleanup-step-critical-editions-description = Finds Classic Work items that are really modern critical editions: they have an author, a work title, an editor and a book, container or volume title in Extra. Each becomes a Book or Book Section with the editor, series and volume title moved out of Extra, and can be linked to a new Classic Work record for the ancient work, a volume record, and a multi-volume record.
+cleanup-preview-heading = Preview
+cleanup-summary = { $items ->
+    [0] No items match.
+    [one] One item matches, and { $suggestions } records could be created or linked.
+   *[other] { $items } items match, and { $suggestions } records could be created or linked.
+}
+cleanup-preview-hint = Untick anything you want to leave alone. If you untick a record, the items are still converted, but are not linked to it, and the data that would have moved to it stays in Extra.
+cleanup-suggestions-heading = Records to create
+cleanup-suggestions-hint = Items that share a work, volume or set share one record. Items linked to the same record in the same way are siblings, and each item’s Relationships section lists them.
+cleanup-suggestion-work = Create Classic Work “{ $title }” (used by { $count })
+cleanup-suggestion-volume = Create volume “{ $title }” (used by { $count })
+cleanup-suggestion-multiVolume = Create multi-volume work “{ $title }” (used by { $count })
+cleanup-suggestion-existing = Link to your existing Classic Work “{ $title }” (used by { $count })
+cleanup-items-heading = Items to convert
+cleanup-select-all = Select all
+cleanup-select-none = Select none
+cleanup-nearmiss = { $count ->
+    [one] One more Classic Work has an editor in Extra but is missing an author, a title or a container or volume title, so it was left alone.
+   *[other] { $count } more Classic Works have an editor in Extra but are missing an author, a title or a container or volume title, so they were left alone.
+}
+cleanup-apply = Apply
+cleanup-applying = Applying…
+cleanup-done-heading = Done
+cleanup-done = { $converted } converted, { $created } records created, { $linked } relationships added.
+cleanup-undo = Undo this run
+cleanup-undo-confirm-title = Undo cleanup
+cleanup-undo-confirm = Put the converted items back as they were and delete the records this run created?
+cleanup-undone = Restored { $restored } items and removed { $removed } records.
+cleanup-history-heading = Earlier runs
+cleanup-history-hint = Undo puts the items back as they were and deletes the records that run created. Do it soon after a run; edits made since to those items are replaced.
+cleanup-history-entry = { $items } items converted, { $created } records created
+cleanup-history-undone = Undone
+cleanup-close = Close
+
+cleanup-merge-heading = Merge duplicate works
+cleanup-merge-intro = Choose the work to keep. The titles of the others are kept on it as titles in other languages, and their relationships, tags, collections, notes and attachments move to it. The others go to the trash.
+cleanup-merge-empty = Select two or more Classic Work items in your library first, then choose this again.
+cleanup-merge-keep = Keep
+cleanup-merge-work = Work
+cleanup-merge-language = Title language
+cleanup-merge-preview = Keeps “{ $keep }”, with these titles stored: { $titles }
+cleanup-merge-button = Merge
+cleanup-merge-confirm-title = Merge works
+cleanup-merge-confirm = Merge { $count } works into one? The others are moved to the trash.
+cleanup-merge-done = Merged. { $count } titles kept as other languages.

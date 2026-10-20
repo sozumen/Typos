@@ -763,6 +763,10 @@
 									oncommand="Zotero.VisualStyleEditor.open()"/>
 							<menuitem id="style-ai-menu-item" data-l10n-id="menu-tools-style-ai"
 									oncommand="Zotero.StyleAI.openDialog()"/>
+							<menuitem id="library-cleanup-menu-item" class="menu-type-library" data-l10n-id="menu-tools-library-cleanup"
+									oncommand="Zotero.Cleanup.openDialog({ libraryID: ZoteroPane.getSelectedLibraryID() || undefined })"/>
+							<menuitem id="merge-works-menu-item" class="menu-type-library" data-l10n-id="menu-tools-merge-works"
+									oncommand="Zotero.Cleanup.openMergeDialog()"/>
 							<menu id="developer-menu"
 									label="&developer.label;">
 								<menupopup>

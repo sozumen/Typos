@@ -754,6 +754,7 @@ const { CommandLineOptions } = ChromeUtils.importESModule("chrome://zotero/conte
 			await Zotero.Relations.init();
 			Zotero.ItemRelations.init();
 			Zotero.ItemRelationsPane.init();
+			Zotero.Cleanup.init();
 			await Zotero.ClassicalAbbreviations.init();
 			Zotero.Backup.init();
 			Zotero.TyposUpdater.init();

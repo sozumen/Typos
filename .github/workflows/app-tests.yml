@@ -9,7 +9,7 @@ on:
       args:
         description: 'Arguments for test/runtests.sh (test names, or "-p 2/4" for a shard of the whole suite)'
         required: true
-        default: '-f classicItemType itemRelations classicalAbbreviations jurismImport backup server'
+        default: '-f classicItemType itemRelations classicalAbbreviations jurismImport backup server cleanup'
       lines:
         description: 'How many lines from the end of the output to put in the annotation'
         required: false

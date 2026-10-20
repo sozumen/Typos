@@ -11,8 +11,8 @@ describe("Zotero.JurismImport", function () {
 				creators: [{ creatorType: 'author', name: 'Homer' }],
 				tags: [{ tag: 'epic' }]
 			}]));
-			assert.equal(report.counts.items, 1);
-			assert.lengthOf(report.failed, 0);
+			assert.lengthOf(report.failed, 0, JSON.stringify(report));
+			assert.equal(report.counts.items, 1, JSON.stringify(report));
 			
 			let item = Zotero.Items.getByLibraryAndKey(Zotero.Libraries.userLibraryID, key);
 			assert.equal(item.itemType, 'classic');

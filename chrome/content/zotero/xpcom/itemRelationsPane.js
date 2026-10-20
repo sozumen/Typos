@@ -55,6 +55,8 @@ Zotero.ItemRelationsPane = new function () {
 		let outgoing = await Zotero.ItemRelations.getOutgoing(item);
 		let incoming = await Zotero.ItemRelations.getIncoming(item);
 
+		let siblings = await Zotero.ItemRelations.getSiblings(item);
+
 		container.replaceChildren();
 
 		for (let { typeKey, items } of outgoing) {
@@ -70,6 +72,16 @@ Zotero.ItemRelationsPane = new function () {
 			})));
 		}
 
+		for (let { typeKey, parent, items } of siblings) {
+			container.append(this._renderGroup(
+				doc,
+				Zotero.ItemRelations.TYPES[typeKey].siblingsL10nID,
+				items,
+				null,
+				{ title: parent.getDisplayTitle() }
+			));
+		}
+
 		if (!outgoing.length && !incoming.length) {
 			let empty = doc.createElement('div');
 			empty.className = 'empty';
@@ -83,13 +95,16 @@ Zotero.ItemRelationsPane = new function () {
 	};
 
 
-	this._renderGroup = function (doc, l10nID, items, onRemove) {
+	this._renderGroup = function (doc, l10nID, items, onRemove, l10nArgs) {
 		let group = doc.createElement('div');
 		group.className = 'group';
 
 		let heading = doc.createElement('div');
 		heading.className = 'heading';
 		heading.setAttribute('data-l10n-id', l10nID);
+		if (l10nArgs) {
+			heading.setAttribute('data-l10n-args', JSON.stringify(l10nArgs));
+		}
 		group.append(heading);
 
 		let collation = Zotero.getLocaleCollation();

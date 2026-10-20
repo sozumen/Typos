@@ -119,6 +119,34 @@ describe("Zotero.ItemRelations", function () {
 		});
 	});
 	
+	describe("#getSiblings()", function () {
+		it("should find items related to the same item in the same way", async function () {
+			let other = await createDataObject('item', { itemType: 'book' });
+			await Zotero.ItemRelations.add(edition, 'criticalEditionOf', classic);
+			await Zotero.ItemRelations.add(other, 'criticalEditionOf', classic);
+			let siblings = await Zotero.ItemRelations.getSiblings(edition);
+			assert.lengthOf(siblings, 1);
+			assert.equal(siblings[0].typeKey, 'criticalEditionOf');
+			assert.equal(siblings[0].parent.id, classic.id);
+			assert.deepEqual(siblings[0].items.map(i => i.id), [other.id]);
+		});
+		
+		it("should not count items related in a different way, or the item itself", async function () {
+			let other = await createDataObject('item', { itemType: 'book' });
+			await Zotero.ItemRelations.add(edition, 'criticalEditionOf', classic);
+			await Zotero.ItemRelations.add(other, 'translationOf', classic);
+			assert.lengthOf(await Zotero.ItemRelations.getSiblings(edition), 0);
+		});
+		
+		it("should treat two volumes of one set as siblings", async function () {
+			let volume2 = await createDataObject('item', { itemType: 'book' });
+			await Zotero.ItemRelations.add(book, 'partOf', edition);
+			await Zotero.ItemRelations.add(volume2, 'partOf', edition);
+			let siblings = await Zotero.ItemRelations.getSiblings(volume2);
+			assert.deepEqual(siblings[0].items.map(i => i.id), [book.id]);
+		});
+	});
+	
 	describe("#remove()", function () {
 		it("should remove the relation", async function () {
 			await Zotero.ItemRelations.add(chapter, 'partOf', book);

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+    Library cleanup: a list of cleanup steps with a preview before anything is changed, and a
+    window for merging duplicate works. The logic is in xpcom/cleanup/.
+
+    This file is part of the Zotero-derived application and is licensed under the
+    GNU Affero General Public License, version 3 or later.
+-->
+<html id="library-cleanup" windowtype="zotero:library-cleanup">
+	<head>
+		<meta charset="utf-8">
+		<title data-l10n-id="cleanup-title"></title>
+		<link href="chrome://zotero-platform/content/zotero.css" rel="stylesheet"/>
+	</head>
+	<body>
+		<main id="lc-main">
+			<!-- Steps -->
+			<div id="lc-steps-view">
+				<h1 data-l10n-id="cleanup-heading"></h1>
+				<p data-l10n-id="cleanup-intro"></p>
+
+				<fieldset class="lc-box">
+					<legend data-l10n-id="cleanup-step-heading"></legend>
+					<div id="lc-step-list"></div>
+					<p id="lc-step-description" class="lc-hint"></p>
+					<div class="lc-row">
+						<button type="button" id="lc-scan" class="lc-accent" data-l10n-id="cleanup-scan"></button>
+						<span id="lc-scan-status" role="status"></span>
+					</div>
+				</fieldset>
+
+				<section id="lc-results" hidden>
+					<h2 data-l10n-id="cleanup-preview-heading"></h2>
+					<p id="lc-summary" role="status"></p>
+					<p class="lc-hint" data-l10n-id="cleanup-preview-hint"></p>
+
+					<fieldset id="lc-suggestions-box" class="lc-box">
+						<legend data-l10n-id="cleanup-suggestions-heading"></legend>
+						<p class="lc-hint" data-l10n-id="cleanup-suggestions-hint"></p>
+						<div class="lc-row">
+							<button type="button" id="lc-suggestions-all" data-l10n-id="cleanup-select-all"></button>
+							<button type="button" id="lc-suggestions-none" data-l10n-id="cleanup-select-none"></button>
+						</div>
+						<ul id="lc-suggestions" class="lc-list"></ul>
+					</fieldset>
+
+					<fieldset id="lc-items-box" class="lc-box">
+						<legend data-l10n-id="cleanup-items-heading"></legend>
+						<div class="lc-row">
+							<button type="button" id="lc-items-all" data-l10n-id="cleanup-select-all"></button>
+							<button type="button" id="lc-items-none" data-l10n-id="cleanup-select-none"></button>
+						</div>
+						<ul id="lc-items" class="lc-list"></ul>
+					</fieldset>
+
+					<p id="lc-nearmiss" class="lc-hint" hidden></p>
+
+					<div class="lc-row">
+						<button type="button" id="lc-apply" class="lc-accent" data-l10n-id="cleanup-apply"></button>
+						<span id="lc-apply-status" role="status"></span>
+					</div>
+				</section>
+
+				<section id="lc-done" class="lc-box" hidden>
+					<h2 data-l10n-id="cleanup-done-heading"></h2>
+					<p id="lc-done-text"></p>
+					<ul id="lc-warnings" class="lc-list"></ul>
+					<button type="button" id="lc-undo-now" data-l10n-id="cleanup-undo"></button>
+				</section>
+
+				<fieldset id="lc-history-box" class="lc-box" hidden>
+					<legend data-l10n-id="cleanup-history-heading"></legend>
+					<p class="lc-hint" data-l10n-id="cleanup-history-hint"></p>
+					<ul id="lc-history" class="lc-list"></ul>
+				</fieldset>
+			</div>
+
+			<!-- Merge works -->
+			<div id="lc-merge-view" hidden>
+				<h1 data-l10n-id="cleanup-merge-heading"></h1>
+				<p data-l10n-id="cleanup-merge-intro"></p>
+				<p id="lc-merge-empty" hidden data-l10n-id="cleanup-merge-empty"></p>
+				<table id="lc-merge-table" hidden>
+					<thead>
+						<tr>
+							<th data-l10n-id="cleanup-merge-keep"></th>
+							<th data-l10n-id="cleanup-merge-work"></th>
+							<th data-l10n-id="cleanup-merge-language"></th>
+						</tr>
+					</thead>
+					<tbody id="lc-merge-rows"></tbody>
+				</table>
+				<p id="lc-merge-preview" class="lc-hint"></p>
+				<div class="lc-row">
+					<button type="button" id="lc-merge" class="lc-accent" data-l10n-id="cleanup-merge-button" disabled></button>
+					<span id="lc-merge-status" role="status"></span>
+				</div>
+			</div>
+
+			<div class="lc-row lc-footer">
+				<button type="button" id="lc-close" data-l10n-id="cleanup-close"></button>
+			</div>
+		</main>
+		<script src="chrome://zotero/content/include.js"></script>
+		<script src="cleanup.js"></script>
+	</body>
+</html>
