@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+
+cd "$ROOT_DIR"
+
+mkdir -p xulrunner/bin
+tmp=$(mktemp -d)
+curl -fL --retry 3 -o "$tmp/resource_hacker.zip" https://www.angusj.com/resourcehacker/resource_hacker.zip
+unzip -o "$tmp/resource_hacker.zip" ResourceHacker.exe -d xulrunner/bin
+chmod 755 xulrunner/bin/ResourceHacker.exe
+rm -rf "$tmp"

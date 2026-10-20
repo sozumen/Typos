@@ -1,0 +1,14 @@
+.DS_Store
+node_modules
+build/
+.signatures.json
+tmp
+app/win/codesign
+.upstream-work/
+upstream-report/
+
+# Fetched at build time from upstream (see app/lfs-files.json)
+app/win/zotero.exe.tar.xz
+app/win/updater.exe.tar.xz
+app/mac/updater.tar.xz
+app/linux/updater.tar.xz

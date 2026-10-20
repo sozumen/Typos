@@ -1,0 +1,6 @@
+type,full,abbreviation,author,aliases
+author,Homer,Hom.,,Homerus
+author,Vergil,Verg.,,Virgil|Publius Vergilius Maro
+work,Iliad,Il.,Homer,Ilias
+work,Odyssey,Od.,Homer,Odyssea
+work,Aeneid,Aen.,Vergil,

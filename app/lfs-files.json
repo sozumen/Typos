@@ -1,0 +1,22 @@
+{
+	"_comment": "Binaries that upstream Zotero keeps in Git LFS. Typos does not store them (GitHub refuses LFS pointers whose objects are not in this repository), so the build downloads them from Zotero's public LFS store and checks the SHA-256. Regenerate this list from upstream's pointer files when the launcher or updater changes (fork/upstream/touchpoints.json flags it).",
+	"upstream": "https://github.com/zotero/zotero.git/info/lfs/objects/batch",
+	"files": {
+		"app/win/zotero.exe.tar.xz": {
+			"oid": "f68d351e095924a2f1ebf6f909133d7e7de8a1a87d3f3748945ff77e07163e1e",
+			"size": 525908
+		},
+		"app/win/updater.exe.tar.xz": {
+			"oid": "4480ebdfb1b6a359013c0458ef9c21fab6eb1ff231051092249f154af24d0ed7",
+			"size": 642212
+		},
+		"app/mac/updater.tar.xz": {
+			"oid": "361730d7cea854b38c6968143555c5f5fe251e1c95f265a6133514ee72ea2c53",
+			"size": 98904
+		},
+		"app/linux/updater.tar.xz": {
+			"oid": "a1f368bb36408d61d4b8f9dda561738686e626513346e138d55a0ef58055a6fc",
+			"size": 123776
+		}
+	}
+}

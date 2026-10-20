@@ -1,0 +1,17 @@
+{
+	"format": "typos-abbreviations",
+	"version": 1,
+	"id": "sample-classical",
+	"name": "Sample classical abbreviations",
+	"description": "A few entries showing the format. Replace with a list from your preferred authority.",
+	"source": "Illustrative sample -- verify against your style guide before use",
+	"entries": [
+		{ "type": "author", "full": "Homer", "abbreviation": "Hom.", "aliases": ["Homerus"] },
+		{ "type": "author", "full": "Vergil", "abbreviation": "Verg.", "aliases": ["Virgil", "Publius Vergilius Maro"] },
+		{ "type": "author", "full": "Cicero", "abbreviation": "Cic.", "aliases": ["Marcus Tullius Cicero"] },
+		{ "type": "work", "full": "Iliad", "abbreviation": "Il.", "author": "Homer", "aliases": ["Ilias"] },
+		{ "type": "work", "full": "Odyssey", "abbreviation": "Od.", "author": "Homer", "aliases": ["Odyssea"] },
+		{ "type": "work", "full": "Aeneid", "abbreviation": "Aen.", "author": "Vergil" },
+		{ "type": "work", "full": "Letters to Atticus", "abbreviation": "Att.", "author": "Cicero", "aliases": ["Epistulae ad Atticum"] }
+	]
+}

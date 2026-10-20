@@ -1,0 +1,88 @@
+{
+	"_comment": "Areas where an upstream change can break Typos even when it merges without a conflict. Matched against every path upstream changed. risk: high = stop and read before applying; medium = review; low = note. Edit this as the fork grows.",
+	"areas": [
+		{
+			"id": "gecko",
+			"risk": "high",
+			"paths": ["app/config.sh"],
+			"contentPattern": "GECKO_VERSION|custom_components_url",
+			"note": "Possibly a new Gecko (Firefox) version. Typos' Windows build downloads prebuilt Gecko components; a new version needs new components, the NSIS installer scripts re-checked, and the launcher/updater binaries re-fetched: upstream keeps those in Git LFS, which Typos does not copy (the upstream watch does not list them), so also compare upstream's app/win/zotero.exe.tar.xz and updater.exe.tar.xz pointer files (oid and size) with app/lfs-files.json and update that file. Check app/config.sh by hand."
+		},
+		{
+			"id": "database-schema",
+			"risk": "high",
+			"paths": ["resource/schema/**", "chrome/content/zotero/xpcom/schema.js"],
+			"note": "Changes how the database is built or upgraded. Typos adds the Classic Work type on top (fork/schema/overlay.json, built by fork/scripts/build-schema.js). A schema or migration change can't be undone on users' libraries: after applying, run `node fork/scripts/build-schema.js --check`, test with a copy of a real library, and never run a new build against your only copy."
+		},
+		{
+			"id": "item-types",
+			"risk": "high",
+			"paths": [
+				"chrome/content/zotero/xpcom/data/cachedTypes.js",
+				"chrome/content/zotero/xpcom/data/itemFields.js",
+				"chrome/content/zotero/xpcom/data/relations.js",
+				"chrome/content/zotero/xpcom/data/item.js"
+			],
+			"note": "Item types, fields and relations. Typos' Classic Work type and relationships depend on these."
+		},
+		{
+			"id": "module-loading",
+			"risk": "medium",
+			"paths": ["chrome/content/zotero/zotero.mjs", "chrome/content/zotero/xpcom/zotero.js"],
+			"note": "Where Typos adds its own modules and start-up calls (Zotero.Backup.init, Zotero.TyposUpdater.init, ...). A merge can silently drop or reorder them: check the module list and init calls afterwards."
+		},
+		{
+			"id": "citations",
+			"risk": "medium",
+			"paths": [
+				"chrome/content/zotero/xpcom/cite.js",
+				"chrome/content/zotero/xpcom/style.js",
+				"chrome/content/zotero/xpcom/integration.js",
+				"chrome/content/zotero/xpcom/bibliography.js"
+			],
+			"note": "Typos hooks abbreviation lists and per-document profiles into citation output here."
+		},
+		{
+			"id": "windows-build",
+			"risk": "medium",
+			"paths": ["app/**", "js-build/**", "package.json", "package-lock.json"],
+			"note": "Build scripts, installer and dependencies. Typos' installer is renamed, supports per-user and all-users installs, and the build is driven from .github/workflows; upstream changes here need to be carried over by hand."
+		},
+		{
+			"id": "menus-and-panes",
+			"risk": "medium",
+			"paths": [
+				"chrome/content/zotero/zoteroPane.xhtml",
+				"chrome/content/zotero/zoteroPane.js",
+				"chrome/content/zotero/fileInterface.js",
+				"chrome/content/zotero/preferences/**",
+				"chrome/content/zotero/elements/**"
+			],
+			"note": "Typos adds menu items (Tools, Help), preferences and an item-pane section in these files."
+		},
+		{
+			"id": "default-preferences",
+			"risk": "medium",
+			"paths": ["defaults/preferences/zotero.js", "app/assets/prefs.js"],
+			"note": "Typos adds its own preferences, and keeps Mozilla's app.update.* switched off so the app can never be replaced by upstream's updater."
+		},
+		{
+			"id": "locale",
+			"risk": "low",
+			"paths": ["chrome/locale/**"],
+			"note": "Strings. After applying, run `npm run rebrand` so new upstream strings say Typos."
+		},
+		{
+			"id": "branding",
+			"risk": "medium",
+			"paths": ["app/assets/branding/**", "chrome/skin/default/zotero/zotero*.svg", "chrome/skin/default/zotero/zotero*.png", "app/win/*.ico", "app/linux/icons/**"],
+			"note": "Logos and icons were replaced with Typos' own. Don't let upstream artwork come back."
+		},
+		{
+			"id": "submodules",
+			"risk": "low",
+			"paths": ["translators", "styles", "reader", "note-editor", "document-worker", "resource/SingleFile", "chrome/content/zotero/locale/csl", "chrome/content/zotero/xpcom/utilities", "chrome/content/zotero/xpcom/translate", "resource/schema/global"],
+			"note": "Pointers to other repositories (translators, styles, PDF reader, note editor, ...). Updating one is a separate step: `git submodule update --remote <path>` in a branch."
+		}
+	]
+}

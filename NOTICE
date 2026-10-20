@@ -1,0 +1,18 @@
+Typos
+=====
+
+Typos is a modified version of Zotero, which is copyright (c) Corporation for Digital Scholarship,
+Vienna, Virginia, USA, and contributors, and is licensed under the GNU Affero General Public
+License, version 3 (see COPYING). Features ported from Juris-M / Jurism are copyright their
+respective authors and used under the same license.
+
+Typos adds a Classic Work item type, typed item relationships, Juris-M import, backup, and
+abbreviation profiles. These additions are licensed under the same license.
+
+Zotero(R) is a trademark of the Corporation for Digital Scholarship. Typos is not affiliated
+with, sponsored by or endorsed by the Corporation for Digital Scholarship or the Juris-M project.
+The Zotero name and logo must not be used to promote or imply endorsement of Typos.
+
+The source code of the original works is available at:
+  https://github.com/zotero/zotero
+  https://github.com/Juris-M

@@ -1,0 +1,21 @@
+{
+	"format": "typos-abbreviations",
+	"version": 1,
+	"id": "sample-journals",
+	"name": "Sample journals, series and publishers",
+	"description": "A few entries showing journal, series, publisher and place entries. Replace with a list from your preferred authority.",
+	"source": "Illustrative sample -- verify against your style guide before use",
+	"entries": [
+		{ "type": "journal", "full": "The Classical Quarterly", "abbreviation": "CQ", "aliases": ["Classical Quarterly"] },
+		{ "type": "journal", "full": "Journal of Hellenic Studies", "abbreviation": "JHS" },
+		{ "type": "journal", "full": "Journal of Roman Studies", "abbreviation": "JRS" },
+		{ "type": "journal", "full": "Classical Philology", "abbreviation": "CPh" },
+		{ "type": "journal", "full": "Harvard Studies in Classical Philology", "abbreviation": "HSCP" },
+		{ "type": "journal", "full": "Transactions of the American Philological Association", "abbreviation": "TAPA" },
+		{ "type": "series", "full": "Loeb Classical Library", "abbreviation": "LCL" },
+		{ "type": "series", "full": "Oxford Classical Texts", "abbreviation": "OCT" },
+		{ "type": "publisher", "full": "Oxford University Press", "abbreviation": "OUP" },
+		{ "type": "publisher", "full": "Cambridge University Press", "abbreviation": "CUP" },
+		{ "type": "place", "full": "Oxford", "abbreviation": "Oxf." }
+	]
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!--
+    Write a citation style with AI: give it a style manual and/or example citations and Claude
+    drafts a CSL style, which then opens in the Visual Style Editor. The logic is in styleAI.js;
+    the prompt and checking are in xpcom/styleAI/.
+
+    This file is part of the Zotero-derived application and is licensed under the
+    GNU Affero General Public License, version 3 or later.
+-->
+<html id="style-ai" windowtype="zotero:style-ai">
+	<head>
+		<meta charset="utf-8">
+		<title data-l10n-id="styleAI-title"></title>
+		<link href="chrome://zotero-platform/content/zotero.css" rel="stylesheet"/>
+	</head>
+	<body>
+		<main id="sai-main">
+			<h1 data-l10n-id="styleAI-heading"></h1>
+			<p id="sai-intro" data-l10n-id="styleAI-intro"></p>
+
+			<section id="sai-privacy" class="sai-box" hidden>
+				<h2 data-l10n-id="styleAI-privacy-heading"></h2>
+				<p data-l10n-id="styleAI-privacy-text"></p>
+				<button id="sai-privacy-ok" class="sai-accent" data-l10n-id="styleAI-privacy-ok"></button>
+			</section>
+
+			<fieldset id="sai-key-section" class="sai-box">
+				<legend data-l10n-id="styleAI-key-heading"></legend>
+				<p id="sai-key-status" role="status"></p>
+				<div class="sai-row">
+					<input id="sai-key" type="password" autocomplete="off" spellcheck="false" data-l10n-id="styleAI-key-input">
+					<button id="sai-key-save" data-l10n-id="styleAI-key-save"></button>
+					<button id="sai-key-remove" data-l10n-id="styleAI-key-remove" hidden></button>
+				</div>
+				<p class="sai-hint" data-l10n-id="styleAI-key-hint"></p>
+			</fieldset>
+
+			<form id="sai-form" autocomplete="off">
+				<fieldset id="sai-mode-section" class="sai-box" hidden>
+					<legend data-l10n-id="styleAI-mode-heading"></legend>
+					<label class="sai-check"><input type="radio" name="sai-mode" id="sai-mode-new" value="new" checked>
+						<span data-l10n-id="styleAI-mode-new"></span></label>
+					<label class="sai-check"><input type="radio" name="sai-mode" id="sai-mode-revise" value="revise">
+						<span id="sai-mode-revise-label" data-l10n-id="styleAI-mode-revise"></span></label>
+				</fieldset>
+
+				<fieldset class="sai-box">
+					<legend data-l10n-id="styleAI-style-heading"></legend>
+					<div class="sai-field">
+						<label for="sai-name" data-l10n-id="styleAI-name"></label>
+						<input id="sai-name" type="text" required>
+					</div>
+					<div class="sai-field">
+						<label for="sai-kind" data-l10n-id="styleAI-kind"></label>
+						<select id="sai-kind">
+							<option value="auto" data-l10n-id="styleAI-kind-auto"></option>
+							<option value="author-date" data-l10n-id="styleAI-kind-author-date"></option>
+							<option value="numeric" data-l10n-id="styleAI-kind-numeric"></option>
+							<option value="note" data-l10n-id="styleAI-kind-note"></option>
+						</select>
+					</div>
+				</fieldset>
+
+				<fieldset class="sai-box">
+					<legend data-l10n-id="styleAI-manual-heading"></legend>
+					<div class="sai-row">
+						<button type="button" id="sai-manual-choose" data-l10n-id="styleAI-manual-choose"></button>
+						<span id="sai-manual-name"></span>
+						<button type="button" id="sai-manual-clear" data-l10n-id="styleAI-manual-clear" hidden></button>
+					</div>
+					<p class="sai-hint" data-l10n-id="styleAI-manual-hint"></p>
+					<label for="sai-manual-text" data-l10n-id="styleAI-manual-paste"></label>
+					<textarea id="sai-manual-text" rows="5" spellcheck="false"></textarea>
+				</fieldset>
+
+				<fieldset class="sai-box">
+					<legend data-l10n-id="styleAI-examples-heading"></legend>
+					<p class="sai-hint" data-l10n-id="styleAI-examples-hint"></p>
+					<label for="sai-bib" data-l10n-id="styleAI-examples-bib"></label>
+					<textarea id="sai-bib" rows="6"></textarea>
+					<label for="sai-cite" data-l10n-id="styleAI-examples-cite"></label>
+					<textarea id="sai-cite" rows="4"></textarea>
+				</fieldset>
+
+				<fieldset class="sai-box">
+					<legend data-l10n-id="styleAI-extra-heading"></legend>
+					<textarea id="sai-extra" rows="3" data-l10n-id="styleAI-extra-input"></textarea>
+				</fieldset>
+
+				<details id="sai-advanced">
+					<summary data-l10n-id="styleAI-advanced"></summary>
+					<div class="sai-field">
+						<label for="sai-model" data-l10n-id="styleAI-model"></label>
+						<input id="sai-model" type="text" spellcheck="false">
+					</div>
+				</details>
+
+				<div class="sai-row sai-actions">
+					<button type="submit" id="sai-write" class="sai-accent" data-l10n-id="styleAI-write"></button>
+					<button type="button" id="sai-cancel" data-l10n-id="styleAI-cancel" hidden></button>
+					<button type="button" id="sai-close" data-l10n-id="styleAI-close"></button>
+				</div>
+			</form>
+
+			<section id="sai-progress" class="sai-box" hidden aria-live="polite">
+				<ol id="sai-steps"></ol>
+			</section>
+
+			<p id="sai-error" role="alert" hidden></p>
+
+			<section id="sai-result" class="sai-box" hidden>
+				<h2 data-l10n-id="styleAI-result-heading"></h2>
+				<p id="sai-result-status"></p>
+				<ul id="sai-problems"></ul>
+				<h3 id="sai-notes-heading" data-l10n-id="styleAI-notes-heading" hidden></h3>
+				<pre id="sai-notes"></pre>
+				<div class="sai-row">
+					<button type="button" id="sai-open" class="sai-accent" data-l10n-id="styleAI-open"></button>
+				</div>
+			</section>
+		</main>
+
+		<script src="chrome://zotero/content/include.js"></script>
+		<script src="styleAI.js"></script>
+	</body>
+</html>

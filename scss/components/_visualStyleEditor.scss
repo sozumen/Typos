@@ -1,0 +1,419 @@
+// Visual Style Editor window (chrome/content/zotero/tools/visualStyleEditor.html)
+
+#visual-style-editor {
+	// Elements with the hidden attribute stay hidden even where a rule below sets display
+	[hidden] {
+		display: none !important;
+	}
+
+	// The root element is the html element itself
+	&, body {
+		height: 100%;
+	}
+
+	body {
+		display: flex;
+		flex-direction: column;
+		margin: 0;
+		font-size: 12px;
+		background: var(--material-background);
+		color: var(--fill-primary, inherit);
+	}
+
+	h2 {
+		margin: 0;
+		padding: 8px 12px;
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: .04em;
+		color: var(--fill-secondary);
+		border-bottom: var(--material-panedivider);
+	}
+
+	button, select, input, textarea {
+		font-size: 12px;
+	}
+
+	select {
+		max-width: 16em;
+	}
+
+
+	// Toolbar
+
+	#vse-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 14px;
+		padding: 6px 10px;
+		background: var(--material-toolbar);
+		border-bottom: var(--material-panedivider);
+
+		.vse-group {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+		}
+
+		.vse-spacer {
+			flex: 1;
+		}
+
+		button, select {
+			margin: 0;
+		}
+
+		button:disabled, select:disabled {
+			opacity: .45;
+		}
+	}
+
+	button.vse-accent {
+		background: var(--color-accent);
+		color: var(--color-accent-text);
+		border-color: transparent;
+
+		&:disabled {
+			opacity: .45;
+		}
+	}
+
+
+	// Three panes
+
+	#vse-main {
+		flex: 1;
+		min-height: 0;
+		display: grid;
+		grid-template-columns: minmax(260px, 1fr) minmax(300px, 1.1fr) minmax(320px, 1.5fr);
+
+		> section {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			border-inline-end: var(--material-panedivider);
+
+			&:last-child {
+				border-inline-end: 0;
+			}
+		}
+	}
+
+
+	// Structure tree
+
+	#vse-tree {
+		flex: 1;
+		overflow: auto;
+		padding: 4px 0 24px;
+		outline: none;
+		background: var(--material-sidepane);
+
+		&:focus-visible {
+			outline: var(--default-focusring-width, 2px) solid var(--color-accent);
+			outline-offset: -2px;
+		}
+	}
+
+	.vse-node {
+		> [role="group"] {
+			margin-inline-start: 14px;
+			border-inline-start: 1px solid var(--material-border-quinary);
+			padding-inline-start: 2px;
+		}
+	}
+
+	.vse-row-node {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		padding: 3px 8px 3px 4px;
+		margin: 0 4px;
+		border-radius: 4px;
+		cursor: default;
+		position: relative;
+		white-space: nowrap;
+
+		&:hover {
+			background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+		}
+
+		&.selected {
+			background: var(--color-accent);
+			color: var(--color-accent-text);
+
+			.vse-node-detail {
+				color: inherit;
+				opacity: .8;
+			}
+		}
+
+		// Drop indicators while dragging
+		&.drop-before::before,
+		&.drop-after::after {
+			content: "";
+			position: absolute;
+			inset-inline: 0;
+			height: 2px;
+			background: var(--color-accent);
+		}
+
+		&.drop-before::before {
+			top: -1px;
+		}
+
+		&.drop-after::after {
+			bottom: -1px;
+		}
+
+		&.drop-inside {
+			outline: 2px solid var(--color-accent);
+			outline-offset: -2px;
+		}
+	}
+
+	.vse-twisty {
+		display: inline-block;
+		width: 12px;
+		flex: none;
+		text-align: center;
+		font-size: 10px;
+		cursor: pointer;
+	}
+
+	.vse-node-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.vse-node-detail {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: var(--fill-secondary);
+		font-size: 11px;
+	}
+
+	// Small colored label saying what kind of part it is
+	.vse-badge {
+		flex: none;
+		font-size: 9px;
+		line-height: 1;
+		padding: 2px 4px;
+		border-radius: 3px;
+		text-transform: uppercase;
+		letter-spacing: .03em;
+		background: color-mix(in srgb, var(--badge, #888) 22%, transparent);
+		color: inherit;
+		border: 1px solid color-mix(in srgb, var(--badge, #888) 55%, transparent);
+
+		&[data-kind="output"] { --badge: #2e8b57; }
+		&[data-kind="data"] { --badge: #3a7bd5; }
+		&[data-kind="structure"] { --badge: #8a6bbe; }
+		&[data-kind="logic"] { --badge: #d98a1f; }
+		&[data-kind="macro"] { --badge: #c2503f; }
+		&[data-kind="sort"] { --badge: #5f8a8b; }
+		&[data-kind="section"] { --badge: #666; }
+	}
+
+
+	// Inspector
+
+	#vse-inspector-pane {
+		overflow: hidden;
+	}
+
+	#vse-inspector, #vse-xml-view {
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+		padding: 10px 14px 24px;
+	}
+
+	#vse-xml-view {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+
+		textarea {
+			flex: 1;
+			min-height: 200px;
+			font-family: monospace;
+			tab-size: 2;
+			resize: none;
+		}
+
+		#vse-xml-error {
+			color: var(--accent-red);
+			min-height: 1.4em;
+			font-family: monospace;
+		}
+
+		.vse-row {
+			display: flex;
+			gap: 6px;
+		}
+	}
+
+	.vse-node-title {
+		margin: 0 0 10px;
+		font-size: 13px;
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+	}
+
+	.vse-section {
+		margin: 0 0 12px;
+		padding: 8px 10px 10px;
+		border: 1px solid var(--material-border-quinary);
+		border-radius: 6px;
+
+		legend {
+			padding: 0 4px;
+			font-size: 11px;
+			font-weight: 600;
+			color: var(--fill-secondary);
+		}
+	}
+
+	.vse-field {
+		display: grid;
+		grid-template-columns: 11em 1fr;
+		align-items: center;
+		gap: 2px 8px;
+		margin: 0 0 6px;
+
+		label {
+			color: var(--fill-secondary);
+		}
+
+		input, select {
+			min-width: 0;
+			margin: 0;
+		}
+
+		.vse-hint {
+			grid-column: 2;
+		}
+	}
+
+	.vse-hint {
+		min-height: 0;
+		font-size: 11px;
+		color: var(--fill-secondary);
+
+		&:empty {
+			display: none;
+		}
+
+		&.warning {
+			color: var(--accent-red);
+		}
+
+		&.spaces {
+			font-family: monospace;
+		}
+	}
+
+	.vse-empty {
+		color: var(--fill-secondary);
+	}
+
+	.vse-toggles {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		margin-bottom: 8px;
+
+		.vse-toggle {
+			margin: 0;
+
+			&[aria-pressed="true"] {
+				background: var(--color-accent);
+				color: var(--color-accent-text);
+				border-color: transparent;
+			}
+		}
+	}
+
+
+	// Preview
+
+	#vse-preview-pane {
+		overflow: hidden;
+	}
+
+	#vse-preview-options {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 12px;
+		padding: 8px 12px;
+		border-bottom: var(--material-panedivider);
+
+		label {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			color: var(--fill-secondary);
+		}
+
+		select, input, button {
+			margin: 0;
+		}
+	}
+
+	#vse-preview-items {
+		padding: 6px 12px;
+		font-size: 11px;
+		color: var(--fill-secondary);
+	}
+
+	#vse-preview {
+		flex: 1;
+		min-height: 0;
+		border: 0;
+		width: 100%;
+		background: var(--material-background);
+	}
+
+
+	// Status bar
+
+	#vse-status {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 4px 12px;
+		border-top: var(--material-panedivider);
+		background: var(--material-toolbar);
+		min-height: 22px;
+
+		#vse-validity {
+			&.valid::before {
+				content: "\2713  ";
+				color: #2e8b57;
+			}
+
+			&.invalid {
+				color: var(--accent-red);
+			}
+		}
+
+		#vse-message {
+			flex: 1;
+			text-align: end;
+
+			&.error {
+				color: var(--accent-red);
+			}
+		}
+
+		button {
+			margin: 0;
+		}
+	}
+}

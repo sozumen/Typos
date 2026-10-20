@@ -1,0 +1,58 @@
+#!/bin/bash
+# Download binaries that upstream Zotero keeps in Git LFS and Typos does not store (see
+# app/lfs-files.json), and check each against its SHA-256.
+#
+# Usage: fetch_lfs_upstream [path ...]     paths as listed in app/lfs-files.json, e.g. app/win/zotero.exe.tar.xz
+#                                          (no paths = all of them)
+set -euo pipefail
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
+MANIFEST="${LFS_MANIFEST:-$ROOT_DIR/app/lfs-files.json}"
+
+cd "$ROOT_DIR"
+
+if [ $# -eq 0 ]; then
+	set -- $(python3 -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["files"]))' "$MANIFEST")
+fi
+
+batch_url=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstream"])' "$MANIFEST")
+batch_url="${UPSTREAM_LFS_URL:-$batch_url}"
+
+for f in "$@"; do
+	f="${f#./}"
+	entry=$(python3 -c '
+import json, sys
+m = json.load(open(sys.argv[1]))["files"]
+e = m.get(sys.argv[2])
+if not e:
+	sys.exit("%s is not listed in %s" % (sys.argv[2], sys.argv[1]))
+print(e["oid"], e["size"])' "$MANIFEST" "$f")
+	oid=${entry% *}
+	size=${entry#* }
+	if [ -f "$f" ] && [ "$(sha256sum "$f" | cut -d' ' -f1)" = "$oid" ]; then
+		echo "$f is already there"
+		continue
+	fi
+	echo "Fetching $f ($size bytes)"
+	resp=$(curl -fsS -X POST \
+		-H 'Accept: application/vnd.git-lfs+json' \
+		-H 'Content-Type: application/vnd.git-lfs+json' \
+		"$batch_url" \
+		-d "{\"operation\":\"download\",\"transfers\":[\"basic\"],\"objects\":[{\"oid\":\"$oid\",\"size\":$size}]}")
+	href=$(echo "$resp" | python3 -c 'import json,sys; d=json.load(sys.stdin); o=d["objects"][0]; print(o["actions"]["download"]["href"] if "actions" in o else "")')
+	if [ -z "$href" ]; then
+		echo "The LFS server gave no download URL for $oid: $resp" >&2
+		exit 1
+	fi
+	mkdir -p "$(dirname "$f")"
+	tmp="$f.download"
+	curl -fsSL -o "$tmp" "$href"
+	actual=$(sha256sum "$tmp" | cut -d' ' -f1)
+	if [ "$actual" != "$oid" ]; then
+		echo "Checksum mismatch for $f: expected $oid, got $actual" >&2
+		rm -f "$tmp"
+		exit 1
+	fi
+	mv "$tmp" "$f"
+done

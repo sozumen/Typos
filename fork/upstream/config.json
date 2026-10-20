@@ -1,0 +1,47 @@
+{
+	"_comment": "What Typos was built from and which upstream Zotero lines to watch. 'base' moves only when apply.js finishes a merge (or when you edit it by hand after merging upstream yourself).",
+	"repo": "https://github.com/zotero/zotero.git",
+	"base": {
+		"commit": "a4b7102b949be3d7bec354dab30808a7bc4f9ead",
+		"describe": "Zotero branch 10.0 after 10.0.6, version file 10.0.7.SOURCE"
+	},
+	"tracks": [
+		{
+			"id": "line",
+			"label": "Zotero 10.0 line (bug fixes for the version Typos is built on)",
+			"kind": "branch",
+			"ref": "10.0"
+		},
+		{
+			"id": "release",
+			"label": "Newest tagged Zotero release",
+			"kind": "latest-tag",
+			"minTag": "10.0.7"
+		},
+		{
+			"id": "main",
+			"label": "Zotero main (the next major version, in development)",
+			"kind": "branch",
+			"ref": "main"
+		}
+	],
+	"ignore": [
+		".github/**",
+		".gitattributes",
+		"CONTRIBUTING.md",
+		"update.rdf",
+		"app/win/zotero.exe.tar.xz",
+		"app/win/updater.exe.tar.xz",
+		"app/mac/updater.tar.xz",
+		"app/linux/updater.tar.xz"
+	],
+	"forkOwned": [
+		"README.md",
+		"NOTICE",
+		"FORK.md",
+		"CLAUDE.md",
+		"fork/**",
+		"branding/**",
+		"docs/**"
+	]
+}

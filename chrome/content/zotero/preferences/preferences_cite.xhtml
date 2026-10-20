@@ -1,0 +1,159 @@
+<!--
+    ***** BEGIN LICENSE BLOCK *****
+    
+    Copyright © 2006–2022 Center for History and New Media
+                     George Mason University, Fairfax, Virginia, USA
+                     http://zotero.org
+    
+    This file is part of Zotero.
+    
+    Zotero is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    Zotero is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+    
+    You should have received a copy of the GNU Affero General Public License
+    along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+    
+    ***** END LICENSE BLOCK *****
+-->
+
+<vbox id="zotero-prefpane-cite" onload="event.waitUntil(Zotero_Preferences.Cite.init())">
+	<vbox class="main-section" id="styles">
+		<groupbox flex="1" aria-label="&zotero.preferences.cite.styles.styleManager;" aria-describedby="styleManager-intro">
+			<!-- HTML needs to be wrapped in an hbox to isolate from XUL box layout -->
+			<hbox><label control="styleManager-table"><html:h2>&zotero.preferences.cite.styles.styleManager;</html:h2></label></hbox>
+			<description id="styleManager-intro" data-l10n-id="preferences-styleManager-intro"/>
+			<separator class="thin"/>
+			<hbox class="virtualized-table-container" flex="1">
+				<html:div id="styleManager"/>
+			</hbox>
+			<separator class="thin"/>
+			<hbox id="styleManager-buttons" align="center">
+				<button id="reset-styles-button"
+					data-l10n-id="preferences-styleManager-restore-default"
+					oncommand="Zotero_Preferences.Cite.resetStyles()"/>
+				<button id="add-from-file-button" data-l10n-id="preferences-styleManager-add-from-file"
+					oncommand="Zotero_Preferences.Cite.addStyle()"/>
+				<button id="get-additional-styles-button" data-l10n-id="preferences-styleManager-get-additional-styles"
+					oncommand="Zotero_Preferences.Cite.openStylesPage()"/>
+			</hbox>
+		</groupbox>
+		
+		<groupbox aria-labelledby="citation-dialog-title">
+			<label><html:h2 id="citation-dialog-title" data-l10n-id="preferences-citation-dialog"></html:h2></label>
+			<groupbox aria-labelledby="citation-dialog-mode-label">
+				<hbox align="center">
+					<label id="citation-dialog-mode-label" data-l10n-id="preferences-citation-dialog-mode">:</label>
+					<radiogroup orient="horizontal" id="citation-dialog-mode" preference="extensions.zotero.integration.citationDialogMode">
+						<radio data-l10n-id="preferences-citation-dialog-mode-last-used" value="last-used"/>
+						<radio data-l10n-id="preferences-citation-dialog-mode-library" value="library"/>
+						<radio data-l10n-id="preferences-citation-dialog-mode-list" value="list"/>
+					</radiogroup>
+				</hbox>
+			</groupbox>
+		</groupbox>
+
+		<groupbox aria-label="&zotero.preferences.citationOptions.caption;">
+			<label><html:h2>&zotero.preferences.citationOptions.caption;</html:h2></label>
+			
+			<checkbox label="&zotero.preferences.export.citePaperJournalArticleURL;" preference="extensions.zotero.export.citePaperJournalArticleURL" native="true" aria-describedby="export-citePaperJournalArticleURL"/>
+			<!-- This doesn't wrap without an explicit width, for some reason -->
+			<label id="export-citePaperJournalArticleURL" width="45em">
+				&zotero.preferences.export.citePaperJournalArticleURL.description;
+			</label>
+		</groupbox>
+		
+		<groupbox id="classical-abbreviations" aria-labelledby="classical-abbreviations-title">
+			<label><html:h2 id="classical-abbreviations-title" data-l10n-id="preferences-classical-abbreviations"/></label>
+			<description data-l10n-id="preferences-classical-abbreviations-intro"/>
+			
+			<label><html:h3 data-l10n-id="preferences-abbreviations-lists-heading"/></label>
+			<description data-l10n-id="preferences-abbreviations-lists-description"/>
+			<html:div id="classical-abbreviations-lists"/>
+			<separator class="thin"/>
+			<hbox>
+				<button id="classical-abbreviations-import" data-l10n-id="preferences-classical-abbreviations-import"
+					oncommand="Zotero_Preferences.Cite.importAbbreviationList()"/>
+			</hbox>
+			
+			<separator/>
+			<label><html:h3 data-l10n-id="preferences-abbreviations-general-heading"/></label>
+			<description data-l10n-id="preferences-abbreviations-general-description"/>
+			<hbox align="center">
+				<label control="classical-abbreviations-mode" data-l10n-id="preferences-classical-abbreviations-mode"/>
+				<menulist id="classical-abbreviations-mode" preference="extensions.zotero.classicalAbbreviations.mode">
+					<menupopup>
+						<menuitem value="off" data-l10n-id="preferences-classical-abbreviations-mode-off"/>
+						<menuitem value="abbreviated" data-l10n-id="preferences-classical-abbreviations-mode-abbreviated"/>
+						<menuitem value="short-title" data-l10n-id="preferences-classical-abbreviations-mode-short-title"/>
+					</menupopup>
+				</menulist>
+			</hbox>
+			<hbox align="center">
+				<label control="classical-abbreviations-scope" data-l10n-id="preferences-classical-abbreviations-scope"/>
+				<menulist id="classical-abbreviations-scope" preference="extensions.zotero.classicalAbbreviations.scope">
+					<menupopup>
+						<menuitem value="classic" data-l10n-id="preferences-classical-abbreviations-scope-classic"/>
+						<menuitem value="all" data-l10n-id="preferences-classical-abbreviations-scope-all"/>
+					</menupopup>
+				</menulist>
+			</hbox>
+			<label data-l10n-id="preferences-abbreviations-types"/>
+			<checkbox data-l10n-id="preferences-classical-abbreviations-works" preference="extensions.zotero.classicalAbbreviations.abbreviateWorks" native="true"/>
+			<checkbox data-l10n-id="preferences-classical-abbreviations-authors" preference="extensions.zotero.classicalAbbreviations.abbreviateAuthors" native="true"/>
+			<checkbox data-l10n-id="preferences-abbreviations-journals" preference="extensions.zotero.classicalAbbreviations.abbreviateJournals" native="true"/>
+			<checkbox data-l10n-id="preferences-abbreviations-series" preference="extensions.zotero.classicalAbbreviations.abbreviateSeries" native="true"/>
+			<checkbox data-l10n-id="preferences-abbreviations-publishers" preference="extensions.zotero.classicalAbbreviations.abbreviatePublishers" native="true"/>
+			<checkbox data-l10n-id="preferences-abbreviations-places" preference="extensions.zotero.classicalAbbreviations.abbreviatePlaces" native="true"/>
+			<checkbox data-l10n-id="preferences-abbreviations-prefer-item" preference="extensions.zotero.classicalAbbreviations.preferItemAbbreviations" native="true"/>
+			
+			<separator/>
+			<label><html:h3 data-l10n-id="preferences-abbreviations-profiles-heading"/></label>
+			<description data-l10n-id="preferences-abbreviations-profiles-description"/>
+			<html:div id="abbreviation-profiles"/>
+			<separator class="thin"/>
+			<hbox>
+				<button id="abbreviation-profile-new" data-l10n-id="preferences-abbreviations-profile-new"
+					oncommand="Zotero_Preferences.Cite.editAbbreviationProfile()"/>
+			</hbox>
+			
+			<separator/>
+			<label><html:h3 data-l10n-id="preferences-abbreviations-styles-heading"/></label>
+			<description data-l10n-id="preferences-abbreviations-styles-description"/>
+			<html:div id="abbreviation-style-assignments"/>
+			<separator class="thin"/>
+			<hbox align="center">
+				<menulist id="abbreviation-style-add" oncommand="Zotero_Preferences.Cite.addStyleAssignment(this.value); this.selectedIndex = 0;">
+					<menupopup/>
+				</menulist>
+			</hbox>
+		</groupbox>
+		
+		<groupbox aria-label="&zotero.general.tools;">
+			<label><html:h2>&zotero.general.tools;</html:h2></label>
+			
+			<hbox>
+				<button id="openCSLEdit"
+					label="&zotero.preferences.styleEditor;"
+					oncommand="window.open('chrome://zotero/content/tools/csledit.xhtml', '_blank', 'chrome,width=950,height=700,resizable')"/>
+				<button id="openVisualStyleEditor"
+					data-l10n-id="preferences-visual-style-editor"
+					oncommand="Zotero.VisualStyleEditor.open()"/>
+				<button id="openCSLPreview"
+					label="&zotero.preferences.stylePreview;"
+					oncommand="window.open('chrome://zotero/content/tools/cslpreview.xhtml', '_blank', 'chrome,width=950,height=700,resizable')"/>
+			</hbox>
+		</groupbox>
+	</vbox>
+	<vbox class="main-section" id="wordProcessors" aria-label="&zotero.preferences.cite.wordProcessors;" role="group">
+		<html:h1>&zotero.preferences.cite.wordProcessors;</html:h1>
+		
+		<vbox id="wordProcessorInstallers"/>
+	</vbox>
+</vbox>

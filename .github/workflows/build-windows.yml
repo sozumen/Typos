@@ -1,0 +1,351 @@
+name: Build Windows installer
+
+# Builds Typos-<version>_x64_setup.exe (and optionally the ARM64 and 32-bit installers).
+#
+#  - Push a tag such as v10.0.7.3 to build and publish release 10.0.7.3.
+#  - Or run this workflow by hand (Actions tab > Build Windows installer > Run workflow) and fill in
+#    the release number. Leave "publish" off for a test build you only download from the run.
+#
+# The first three numbers of the version follow the Zotero release Typos is based on (the "version"
+# file in the repository says which); the fourth number is the Typos release.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Typos release number N (the version becomes <base version>.N, e.g. 10.0.7.3)'
+        required: true
+        type: string
+      publish:
+        description: 'Publish a GitHub release (needed for the in-app update check to find it)'
+        required: true
+        type: boolean
+        default: false
+      archs:
+        description: 'Installers to build, as a JSON list of x64, arm64, win32'
+        required: false
+        type: string
+        default: '["x64"]'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare sources and version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      revision: ${{ steps.version.outputs.revision }}
+      archs: ${{ steps.version.outputs.archs }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: false
+
+      - name: Work out the version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_REVISION: ${{ inputs.revision }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+          INPUT_ARCHS: ${{ inputs.archs }}
+        run: |
+          set -euo pipefail
+          base=$(sed -n 's/^\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\.SOURCE.*/\1/p' version)
+          if [ -z "$base" ]; then
+            echo "Can't read the base version from the version file: $(cat version)" >&2
+            exit 1
+          fi
+          if [ "$EVENT" = "push" ]; then
+            tag="${REF_NAME#v}"
+            if [[ ! "$tag" =~ ^${base//./\\.}\.([0-9]+)$ ]]; then
+              echo "Tag $REF_NAME doesn't match this source's base version $base (expected v$base.<N>)" >&2
+              exit 1
+            fi
+            revision="${BASH_REMATCH[1]}"
+            publish=true
+            archs='["x64"]'
+          else
+            if [[ ! "$INPUT_REVISION" =~ ^[0-9]+$ ]]; then
+              echo "Release number must be a whole number, got '$INPUT_REVISION'" >&2
+              exit 1
+            fi
+            revision="$INPUT_REVISION"
+            publish="$INPUT_PUBLISH"
+            archs="${INPUT_ARCHS:-[\"x64\"]}"
+          fi
+          echo "Version $base.$revision, publish=$publish, archs=$archs"
+          {
+            echo "version=$base.$revision"
+            echo "revision=$revision"
+            echo "publish=$publish"
+            echo "archs=$archs"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check the tests pass first
+        run: node --test fork/test/*.test.js
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Node modules
+        run: npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          # Needed by the document-worker Webpack build
+          NODE_OPTIONS: --openssl-legacy-provider
+
+      - name: Prepare the release source tree
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-src"
+          app/scripts/prepare_build \
+            -s build \
+            -o "$RUNNER_TEMP/release-src" \
+            -c release \
+            --revision "${{ steps.version.outputs.revision }}"
+          test "$(cat "$RUNNER_TEMP/release-src/version")" = "${{ steps.version.outputs.version }}"
+          tar -C "$RUNNER_TEMP/release-src" -cf "$RUNNER_TEMP/typos-source.tar" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: typos-source
+          path: ${{ runner.temp }}/typos-source.tar
+          retention-days: 7
+          compression-level: 0
+
+  windows:
+    name: Windows ${{ matrix.arch }}
+    needs: prepare
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJSON(needs.prepare.outputs.archs) }}
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      CHERE_INVOKING: '1'
+    steps:
+      # Keep shell scripts' line endings as LF
+      - name: Configure git line endings
+        run: git config --global core.autocrlf input
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          lfs: false
+
+      # Only the word processor plug-ins are needed from submodules; the rest is in the source tree
+      - name: Fetch the word processor plug-ins
+        run: git submodule update --init --depth 1 app/modules/zotero-libreoffice-integration app/modules/zotero-word-for-windows-integration
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: typos-source
+          path: ${{ runner.temp }}
+
+      - name: Install NSIS and UPX
+        shell: pwsh
+        run: |
+          choco install nsis upx -y --no-progress
+          if (-not (Test-Path 'C:\Program Files (x86)\NSIS\makensis.exe')) { throw 'makensis.exe was not installed where expected' }
+
+      - name: Install Cygwin
+        uses: cygwin/cygwin-install-action@v4
+        with:
+          packages: >-
+            bash coreutils findutils grep sed gawk tar gzip diffutils file which
+            curl wget unzip zip xz perl python3 rsync util-linux
+
+      - name: Download build tools
+        shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr '{0}'
+        run: |
+          app/scripts/fetch_rcedit
+          app/scripts/fetch_resource_hacker
+
+          # NSIS plug-ins (Mozilla's builds, as the Zotero installer uses); the next step checks them
+          tmp=$(cygpath -u "$RUNNER_TEMP")
+          mkdir -p "$tmp/nsis-plugins"
+          (cd "$tmp/nsis-plugins" && "$OLDPWD/app/win/download-nsis-plugins") || echo "Plug-in download reported an error; checking what arrived"
+
+      - name: Install NSIS plug-ins
+        shell: pwsh
+        run: |
+          $dest = 'C:\Program Files (x86)\NSIS\Plugins\x86-unicode'
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          $found = Get-ChildItem -Path "$env:RUNNER_TEMP\nsis-plugins\Plugins" -Filter *.dll
+          foreach ($f in $found) {
+            $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+            if ($bytes.Length -lt 1024 -or $bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) {
+              throw "$($f.FullName) is not a Windows DLL (download failed?)"
+            }
+            Copy-Item $f.FullName $dest -Force
+          }
+          $need = 'AppAssocReg','ApplicationID','InvokeShellVerb','nsProcess','ShellLink','UAC'
+          foreach ($n in $need) {
+            if (-not (Test-Path "$dest\$n.dll")) { throw "NSIS plug-in $n.dll is missing" }
+          }
+          Get-ChildItem $dest | Format-Table Name, Length
+
+      - name: Fetch Zotero's prebuilt launcher and updater
+        shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr '{0}'
+        run: app/scripts/fetch_lfs_upstream app/win/zotero.exe.tar.xz app/win/updater.exe.tar.xz
+
+      - name: Build
+        shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr '{0}'
+        run: |
+          src=$(cygpath -u "$RUNNER_TEMP")/release-src
+          mkdir -p "$src"
+          tar -C "$src" -xf "$(cygpath -u "$RUNNER_TEMP")/typos-source.tar"
+          test "$(cat "$src/version")" = "$VERSION"
+          app/build.sh -d "$src" -p w -a ${{ matrix.arch }}
+          ls -l app/dist
+
+      - name: Check the installer was made
+        shell: pwsh
+        run: |
+          $arch = '${{ matrix.arch }}'
+          $name = "Typos-$env:VERSION`_$arch`_setup.exe"
+          $path = "app\dist\$name"
+          if (-not (Test-Path $path)) { throw "$path was not built" }
+          "INSTALLER=$path" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "INSTALLER_NAME=$name" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          $size = (Get-Item $path).Length / 1MB
+          "Installer is {0:N1} MB" -f $size
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.arch }}
+          path: app/dist/${{ env.INSTALLER_NAME }}
+          if-no-files-found: error
+
+      # Install it the way a person would (just for this user, silently) and look at the result.
+      # The ARM64 installer can't be tried on x64 runners, and vice versa.
+      - name: Test install
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath $env:INSTALLER -ArgumentList '/S','/CurrentUser' -Wait -PassThru
+          "Installer exit code: $($p.ExitCode)"
+          $dir = Join-Path $env:LOCALAPPDATA 'Typos'
+          if (-not (Test-Path (Join-Path $dir 'zotero.exe'))) {
+            Get-ChildItem $env:LOCALAPPDATA | Format-Table Name
+            throw "zotero.exe is not in $dir"
+          }
+          foreach ($f in 'updater.exe','xul.dll','application.ini','uninstall\helper.exe') {
+            if (-not (Test-Path (Join-Path $dir $f))) { throw "$f is missing from the install" }
+          }
+          $vi = (Get-Item (Join-Path $dir 'zotero.exe')).VersionInfo
+          "ProductName=$($vi.ProductName) ProductVersion=$($vi.ProductVersion) FileDescription=$($vi.FileDescription) Company=$($vi.CompanyName)"
+          if ($vi.ProductName -ne 'Typos') { throw "zotero.exe still says ProductName '$($vi.ProductName)'" }
+          if ($vi.ProductVersion -ne $env:VERSION) { throw "zotero.exe ProductVersion is '$($vi.ProductVersion)', expected $env:VERSION" }
+          $ini = Get-Content (Join-Path $dir 'application.ini') -Raw
+          if ($ini -notmatch "Version=$([regex]::Escape($env:VERSION))") { throw 'application.ini has the wrong version' }
+          if ($ini -notmatch 'Name=Typos') { throw 'application.ini does not say Typos' }
+
+          $reg = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
+            Where-Object { $_.DisplayName -like 'Typos*' }
+          if (-not $reg) { throw 'No Typos entry under Apps & features (HKCU uninstall key)' }
+          "Uninstall entry: $($reg.DisplayName) $($reg.DisplayVersion)"
+
+      - name: Test that the app starts
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:LOCALAPPDATA 'Typos'
+          $profile = Join-Path $env:RUNNER_TEMP 'smoke-profile'
+          New-Item -ItemType Directory -Force -Path $profile | Out-Null
+          $proc = Start-Process -FilePath (Join-Path $dir 'zotero.exe') -ArgumentList '-no-remote','-profile',"`"$profile`"" -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 90; $i++) {
+            Start-Sleep -Seconds 2
+            if ($proc.HasExited) { throw "Typos exited with code $($proc.ExitCode) during startup" }
+            try {
+              $r = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:23119/connector/ping' -TimeoutSec 3
+              if ($r.StatusCode -eq 200) { $ok = $true; break }
+            } catch { }
+          }
+          if (-not $ok) {
+            Get-ChildItem -Recurse $profile -Filter *.log -ErrorAction SilentlyContinue | ForEach-Object { "--- $($_.FullName)"; Get-Content $_.FullName -Tail 50 }
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            throw 'Typos did not answer on its local port within three minutes'
+          }
+          'Typos started and answered.'
+          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+
+      - name: Test uninstall
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:LOCALAPPDATA 'Typos'
+          $un = Join-Path $dir 'uninstall\helper.exe'
+          $p = Start-Process -FilePath $un -ArgumentList '/S' -Wait -PassThru
+          "Uninstaller exit code: $($p.ExitCode)"
+          Start-Sleep -Seconds 5
+          if (Test-Path (Join-Path $dir 'zotero.exe')) { throw 'zotero.exe is still there after uninstalling' }
+
+  release:
+    name: Publish release
+    needs: [prepare, windows]
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+          lfs: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installer-*
+          path: dist
+          merge-multiple: true
+
+      - name: Make the checksum file
+        working-directory: dist
+        run: |
+          ls -l
+          sha256sum Typos-*_setup.exe > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          cat > notes.md <<EOF
+          Typos $VERSION, based on Zotero ${VERSION%.*}.
+
+          **Install:** download \`Typos-${VERSION}_x64_setup.exe\` and run it. Choose "just for me" (no administrator permission needed) or "everyone" when asked.
+
+          **Upgrade:** Typos checks for new releases itself and asks before installing one (Help > Check for Typos Updates).
+
+          The installer is not code-signed, so Windows SmartScreen will say the publisher is unknown. Choose More info, then Run anyway. \`SHA256SUMS\` lists the checksum of each installer.
+          EOF
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag exists -- replacing its files"
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* \
+              --target "$GITHUB_SHA" \
+              --title "Typos $VERSION" \
+              --notes-file notes.md \
+              --generate-notes
+          fi

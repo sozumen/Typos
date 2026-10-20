@@ -1,0 +1,184 @@
+// Write a Style with AI window (chrome/content/zotero/tools/styleAI.html)
+
+#style-ai {
+	[hidden] {
+		display: none !important;
+	}
+
+	&, body {
+		height: 100%;
+	}
+
+	body {
+		margin: 0;
+		font-size: 13px;
+		overflow: auto;
+		background: var(--material-background);
+		color: var(--fill-primary, inherit);
+	}
+
+	#sai-main {
+		max-width: 720px;
+		margin: 0 auto;
+		padding: 16px 20px 32px;
+	}
+
+	h1 {
+		margin: 0 0 6px;
+		font-size: 18px;
+	}
+
+	h2, h3 {
+		margin: 0 0 6px;
+		font-size: 13px;
+	}
+
+	p {
+		margin: 0 0 8px;
+		line-height: 1.4;
+	}
+
+	button, select, input, textarea {
+		font-size: 13px;
+	}
+
+	.sai-box {
+		margin: 0 0 12px;
+		padding: 10px 12px 12px;
+		border: 1px solid var(--material-border-quinary);
+		border-radius: 6px;
+
+		legend {
+			padding: 0 4px;
+			font-weight: 600;
+		}
+	}
+
+	.sai-hint {
+		color: var(--fill-secondary);
+		font-size: 12px;
+	}
+
+	.sai-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-bottom: 6px;
+
+		input[type="password"] {
+			flex: 1;
+			min-width: 12em;
+		}
+	}
+
+	.sai-field {
+		display: grid;
+		grid-template-columns: 8em 1fr;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 6px;
+
+		input, select {
+			min-width: 0;
+			margin: 0;
+		}
+	}
+
+	.sai-check {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 4px;
+	}
+
+	textarea {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+		margin: 4px 0 8px;
+		resize: vertical;
+		font-family: inherit;
+	}
+
+	label {
+		color: var(--fill-secondary);
+	}
+
+	.sai-check label, .sai-check span {
+		color: inherit;
+	}
+
+	button.sai-accent {
+		background: var(--color-accent);
+		color: var(--color-accent-text);
+		border-color: transparent;
+
+		&:disabled {
+			opacity: .45;
+		}
+	}
+
+	.sai-actions {
+		margin-top: 12px;
+	}
+
+	#sai-advanced {
+		margin: 4px 0 8px;
+
+		summary {
+			cursor: default;
+			color: var(--fill-secondary);
+		}
+	}
+
+	#sai-steps {
+		margin: 0;
+		padding-inline-start: 22px;
+
+		li {
+			padding: 2px 0;
+			color: var(--fill-secondary);
+
+			&.current {
+				color: inherit;
+				font-weight: 600;
+
+				&::after {
+					content: " \2026";
+				}
+			}
+
+			&.done {
+				color: inherit;
+
+				&::marker {
+					content: "\2713  ";
+				}
+			}
+
+			&.failed {
+				color: var(--accent-red);
+			}
+		}
+	}
+
+	#sai-error {
+		color: var(--accent-red);
+		margin: 0 0 12px;
+	}
+
+	#sai-problems {
+		margin: 0 0 8px;
+		padding-inline-start: 20px;
+		color: var(--accent-red);
+		font-family: monospace;
+		font-size: 12px;
+	}
+
+	#sai-notes {
+		margin: 0 0 10px;
+		white-space: pre-wrap;
+		font-family: inherit;
+	}
+}

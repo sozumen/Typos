@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<!--
+    Visual Style Editor: edit any citation style as a tree of its parts, with a form for the
+    selected part and a live preview. The logic is in visualStyleEditor.js; the editing model is
+    in xpcom/styleEditor/.
+
+    This file is part of the Zotero-derived application and is licensed under the
+    GNU Affero General Public License, version 3 or later.
+-->
+<html id="visual-style-editor" windowtype="zotero:visual-style-editor">
+	<head>
+		<meta charset="utf-8">
+		<title data-l10n-id="visualStyleEditor-title-plain"></title>
+		<link href="chrome://zotero-platform/content/zotero.css" rel="stylesheet"/>
+	</head>
+	<body>
+		<header id="vse-toolbar" role="toolbar" data-l10n-id="visualStyleEditor-toolbar-label">
+			<div class="vse-group">
+				<select id="vse-open" data-l10n-id="visualStyleEditor-open-label"></select>
+				<select id="vse-new" data-l10n-id="visualStyleEditor-new-label">
+					<option value="" data-l10n-id="visualStyleEditor-new-placeholder"></option>
+					<option value="author-date" data-l10n-id="visualStyleEditor-new-author-date"></option>
+					<option value="numeric" data-l10n-id="visualStyleEditor-new-numeric"></option>
+					<option value="note" data-l10n-id="visualStyleEditor-new-note"></option>
+				</select>
+			</div>
+			<div class="vse-group">
+				<button id="vse-undo" data-l10n-id="visualStyleEditor-undo"></button>
+				<button id="vse-redo" data-l10n-id="visualStyleEditor-redo"></button>
+			</div>
+			<div class="vse-group">
+				<select id="vse-add" data-l10n-id="visualStyleEditor-add-label"></select>
+				<button id="vse-up" data-l10n-id="visualStyleEditor-move-up"></button>
+				<button id="vse-down" data-l10n-id="visualStyleEditor-move-down"></button>
+				<button id="vse-duplicate" data-l10n-id="visualStyleEditor-duplicate"></button>
+				<button id="vse-group" data-l10n-id="visualStyleEditor-group"></button>
+				<button id="vse-ungroup" data-l10n-id="visualStyleEditor-ungroup"></button>
+				<button id="vse-delete" data-l10n-id="visualStyleEditor-delete"></button>
+			</div>
+			<div class="vse-spacer"></div>
+			<div class="vse-group">
+				<button id="vse-ai" class="vse-accent" data-l10n-id="visualStyleEditor-ai"></button>
+				<button id="vse-xml" data-l10n-id="visualStyleEditor-xml"></button>
+				<button id="vse-save" data-l10n-id="visualStyleEditor-save-as"></button>
+				<button id="vse-install" class="vse-accent" data-l10n-id="visualStyleEditor-install"></button>
+			</div>
+		</header>
+
+		<main id="vse-main">
+			<section id="vse-tree-pane" aria-labelledby="vse-tree-heading">
+				<h2 id="vse-tree-heading" data-l10n-id="visualStyleEditor-structure-heading"></h2>
+				<div id="vse-tree" role="tree" tabindex="0" data-l10n-id="visualStyleEditor-structure-label"></div>
+			</section>
+
+			<section id="vse-inspector-pane" aria-labelledby="vse-inspector-heading">
+				<h2 id="vse-inspector-heading" data-l10n-id="visualStyleEditor-details-heading"></h2>
+				<div id="vse-inspector"></div>
+				<div id="vse-xml-view" hidden>
+					<textarea id="vse-xml-text" spellcheck="false" wrap="off"
+						data-l10n-id="visualStyleEditor-xml-label"></textarea>
+					<div id="vse-xml-error" role="alert"></div>
+					<div class="vse-row">
+						<button id="vse-xml-apply" class="vse-accent" data-l10n-id="visualStyleEditor-xml-apply"></button>
+						<button id="vse-xml-close" data-l10n-id="visualStyleEditor-xml-close"></button>
+					</div>
+				</div>
+			</section>
+
+			<section id="vse-preview-pane" aria-labelledby="vse-preview-heading">
+				<h2 id="vse-preview-heading" data-l10n-id="visualStyleEditor-preview-heading"></h2>
+				<div id="vse-preview-options">
+					<label>
+						<span data-l10n-id="visualStyleEditor-preview-locale"></span>
+						<select id="vse-preview-locale"></select>
+					</label>
+					<label>
+						<span data-l10n-id="visualStyleEditor-preview-position"></span>
+						<select id="vse-preview-position"></select>
+					</label>
+					<label>
+						<select id="vse-preview-locator-label" data-l10n-id="visualStyleEditor-preview-locator-label"></select>
+						<input id="vse-preview-locator" size="6" data-l10n-id="visualStyleEditor-preview-locator">
+					</label>
+					<label class="vse-check">
+						<input id="vse-preview-suppress" type="checkbox">
+						<span data-l10n-id="visualStyleEditor-preview-suppress"></span>
+					</label>
+					<button id="vse-preview-refresh" data-l10n-id="visualStyleEditor-preview-refresh"></button>
+				</div>
+				<div id="vse-preview-items" aria-live="polite"></div>
+				<iframe id="vse-preview" sandbox="" data-l10n-id="visualStyleEditor-preview-label"></iframe>
+			</section>
+		</main>
+
+		<footer id="vse-status">
+			<span id="vse-validity" role="status"></span>
+			<button id="vse-goto-error" hidden data-l10n-id="visualStyleEditor-goto-error"></button>
+			<span id="vse-message" role="alert"></span>
+		</footer>
+
+		<script src="chrome://zotero/content/include.js"></script>
+		<script src="visualStyleEditor.js"></script>
+	</body>
+</html>

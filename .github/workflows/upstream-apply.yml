@@ -1,0 +1,85 @@
+# Brings chosen upstream Zotero changes into a NEW BRANCH and opens a DRAFT pull request, so you can
+# look at it, build it (run "Build Windows installer" on the branch) and decide. Nothing is merged.
+name: Upstream apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Which track from fork/upstream/config.json (line, release, main)'
+        required: true
+        default: 'line'
+      mode:
+        description: 'safe = only changes Typos never touched; all = also conflicted files, with markers'
+        type: choice
+        options: [safe, all]
+        default: safe
+      exclude:
+        description: 'Paths or globs to leave out, separated by spaces (optional)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: false
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Make the branch
+        id: apply
+        env:
+          TRACK: ${{ inputs.track }}
+          MODE: ${{ inputs.mode }}
+          EXCLUDE: ${{ inputs.exclude }}
+        run: |
+          set -euo pipefail
+          git config user.name "typos-upstream-bot"
+          git config user.email "typos-upstream-bot@users.noreply.github.com"
+          args=()
+          for p in $EXCLUDE; do args+=(--exclude "$p"); done
+          branch="upstream/${TRACK}-$(date -u +%Y%m%d-%H%M)"
+          node fork/upstream/apply.js --track "$TRACK" --mode "$MODE" --branch "$branch" "${args[@]}" | tee apply.log
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Run Typos' own tests on the result
+        run: node --test fork/test/*.test.js
+
+      - name: Push the branch and open a draft pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.apply.outputs.branch }}
+          TRACK: ${{ inputs.track }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          git push origin "$BRANCH"
+          {
+            echo "Upstream Zotero changes from track \`$TRACK\`, mode \`$MODE\`. **Draft: do not merge before building and trying it.**"
+            echo
+            echo '```'
+            cat apply.log
+            echo '```'
+            echo
+            echo "Before merging:"
+            echo "- Run **Build Windows installer** on this branch and try the result on a copy of a library."
+            echo "- Run \`npm run rebrand\` if new upstream strings appeared."
+            echo "- Resolve any \`<<<<<<<\` markers (mode \`all\`)."
+            echo "- Read \`docs/UPSTREAM.md\`."
+            echo
+            echo "🤖 Opened by the Upstream apply workflow."
+          } > pr-body.md
+          gh pr create --draft --base "${{ github.event.repository.default_branch }}" --head "$BRANCH" \
+            --title "Upstream Zotero ($TRACK, $MODE)" --body-file pr-body.md

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Typos mark, pressed into paper">
+<title>Typos mark, pressed into paper</title>
+<defs>
+<filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0.12 0"/></filter>
+<filter id="pressT" x="-15%" y="-15%" width="130%" height="130%"><feOffset in="SourceAlpha" dx="1.7" dy="2" result="lo"/><feGaussianBlur in="lo" stdDeviation="0.9" result="lb"/><feFlood flood-color="#FFFFFF" flood-opacity="0.9"/><feComposite in2="lb" operator="in" result="lip"/><feOffset in="SourceAlpha" dx="-1.2" dy="-1.4" result="do"/><feGaussianBlur in="do" stdDeviation="0.9" result="db"/><feFlood flood-color="#7A6F55" flood-opacity="0.35"/><feComposite in2="db" operator="in" result="dent"/><feOffset in="SourceAlpha" dx="2.4" dy="3" result="off"/><feGaussianBlur in="off" stdDeviation="1.6" result="blur"/><feComposite in="SourceAlpha" in2="blur" operator="out" result="inner"/><feFlood flood-color="#050E26" flood-opacity="0.75"/><feComposite in2="inner" operator="in" result="shade"/><feMerge><feMergeNode in="dent"/><feMergeNode in="lip"/><feMergeNode in="SourceGraphic"/><feMergeNode in="shade"/></feMerge></filter>
+</defs>
+<rect width="200" height="200" fill="#F3EFE5"/>
+<rect width="200" height="200" filter="url(#grain)"/>
+<path d="M28 34H172V76H161V50H115V144C115 153 126 155 142 155V166H58V155C74 155 85 153 85 144V50H39V76H28Z" fill="#14285A" filter="url(#pressT)"/>
+</svg>

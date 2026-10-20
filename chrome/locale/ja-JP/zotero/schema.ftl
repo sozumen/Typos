@@ -1,0 +1,16 @@
+itemFields-eventPlace = 開催地
+itemFields-originalDate = 原発行日
+itemFields-originalPlace = 原発行地
+itemFields-originalPublisher = 原発行者
+itemFields-partNumber = 部番号
+itemFields-partTitle = 部のタイトル
+itemFields-priorityDate = 優先日
+itemFields-sessionTitle = セッションタイトル
+creatorTypes-chair = 座長
+creatorTypes-creator = 著者
+creatorTypes-executiveProducer = 製作責任者
+creatorTypes-host = ホスト
+creatorTypes-narrator = ナレーター
+creatorTypes-originalCreator = 原著者
+creatorTypes-organizer = 組織
+creatorTypes-seriesCreator = 叢書責任者

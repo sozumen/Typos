@@ -1,0 +1,91 @@
+#!/bin/bash
+# Give Zotero's prebuilt Windows executables Typos's icon and version information.
+#
+# Windows only (uses ResourceHacker and rcedit, which are Windows programs).
+#
+# Usage: rebrand_exe launcher|updater|sfx path/to/file.exe VERSION VERSION_NUMERIC
+#
+#   launcher  zotero.exe       icon groups 1 and 32512 replaced, version strings replaced
+#   updater   updater.exe      version strings replaced
+#   sfx       7zSD.sfx stub    icon group replaced, version strings replaced
+set -euo pipefail
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ $# -ne 4 ]; then
+	echo "Usage: $0 launcher|updater|sfx path/to/file VERSION VERSION_NUMERIC" >&2
+	exit 1
+fi
+kind=$1
+target=$2
+version=$3
+version_numeric=$4
+
+winpath() {
+	cygpath -w "$1"
+}
+
+COPYRIGHT="(C) Corporation for Digital Scholarship and Typos contributors; available under the AGPLv3 license."
+TRADEMARKS="Zotero is a trademark of the Corporation for Digital Scholarship. Typos is an independent fork and is not affiliated with or endorsed by it."
+
+set_icons() {
+	local icon_groups=$1
+	if ! which ResourceHacker.exe > /dev/null 2>&1; then
+		echo "ResourceHacker.exe not found -- install with scripts/fetch_resource_hacker" >&2
+		exit 1
+	fi
+	local work
+	work=$(mktemp -d)
+	cp "$SCRIPT_DIR/zotero.ico" "$work/typos.ico"
+	cp "$target" "$work/in.exe"
+	{
+		echo "[FILENAMES]"
+		echo "Open=in.exe"
+		echo "Save=out.exe"
+		echo "Log=CONSOLE"
+		echo "[COMMANDS]"
+		for g in $icon_groups; do
+			echo "-addoverwrite typos.ico, ICONGROUP,$g,"
+		done
+	} > "$work/rh.txt"
+	(cd "$work" && ResourceHacker.exe -script rh.txt)
+	if [ ! -s "$work/out.exe" ]; then
+		echo "ResourceHacker did not produce an output file for $target" >&2
+		exit 1
+	fi
+	cp "$work/out.exe" "$target"
+	rm -rf "$work"
+}
+
+set_strings() {
+	local desc=$1
+	rcedit "$(winpath "$target")" \
+		--set-file-version "$version_numeric" \
+		--set-product-version "$version" \
+		--set-version-string CompanyName "Typos project" \
+		--set-version-string FileDescription "$desc" \
+		--set-version-string InternalName "Typos" \
+		--set-version-string ProductName "Typos" \
+		--set-version-string LegalCopyright "$COPYRIGHT" \
+		--set-version-string LegalTrademarks "$TRADEMARKS"
+}
+
+case $kind in
+	launcher)
+		set_icons "1 32512"
+		set_strings "Typos"
+		;;
+	updater)
+		set_strings "Typos Updater"
+		;;
+	sfx)
+		# The stub's own icon is group 159 (IDI_ICON3); also add group 1, which sorts first,
+		# so Explorer picks the Typos icon either way
+		set_icons "1 159"
+		set_strings "Typos Setup"
+		;;
+	*)
+		echo "Unknown kind: $kind" >&2
+		exit 1
+		;;
+esac

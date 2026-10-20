@@ -1,0 +1,67 @@
+{
+	"versionOffset": 100000,
+	"itemTypes": [
+		{
+			"itemType": "classic",
+			"fields": [
+				{ "field": "title" },
+				{ "field": "abstractNote" },
+				{ "field": "referenceSystem" },
+				{ "field": "corpusId" },
+				{ "field": "compositionDate" },
+				{ "field": "originalLanguage" },
+				{ "field": "manuscriptType", "baseField": "type" },
+				{ "field": "series" },
+				{ "field": "seriesNumber" },
+				{ "field": "volume" },
+				{ "field": "numberOfVolumes" },
+				{ "field": "edition" },
+				{ "field": "date" },
+				{ "field": "publisher" },
+				{ "field": "place" },
+				{ "field": "originalDate" },
+				{ "field": "originalPublisher" },
+				{ "field": "originalPlace" },
+				{ "field": "numPages" },
+				{ "field": "ISBN" },
+				{ "field": "DOI" },
+				{ "field": "citationKey" },
+				{ "field": "url" },
+				{ "field": "accessDate" },
+				{ "field": "archive" },
+				{ "field": "archiveLocation" },
+				{ "field": "shortTitle" },
+				{ "field": "language" },
+				{ "field": "libraryCatalog" },
+				{ "field": "callNumber" },
+				{ "field": "rights" },
+				{ "field": "extra" }
+			],
+			"creatorTypes": [
+				{ "creatorType": "author", "primary": true },
+				{ "creatorType": "editor" },
+				{ "creatorType": "translator" },
+				{ "creatorType": "contributor" },
+				{ "creatorType": "seriesEditor" }
+			]
+		}
+	],
+	"csl": {
+		"types": {
+			"book": ["classic"]
+		}
+	},
+	"locales": {
+		"en-US": {
+			"itemTypes": {
+				"classic": "Classic Work"
+			},
+			"fields": {
+				"referenceSystem": "Reference System",
+				"corpusId": "Corpus ID",
+				"compositionDate": "Composition Date",
+				"originalLanguage": "Original Language"
+			}
+		}
+	}
+}

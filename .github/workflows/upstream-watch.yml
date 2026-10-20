@@ -1,0 +1,88 @@
+# Looks at upstream Zotero once a week and keeps ONE open issue up to date with what it would take
+# to follow it. Reads and reports only: it never merges, never pushes, never changes a branch.
+# To act on a report, run "Upstream apply" (or fork/upstream/apply.js) -- see docs/UPSTREAM.md.
+name: Upstream watch
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'   # Mondays, 06:17 UTC
+  workflow_dispatch:
+    inputs:
+      build:
+        description: 'Also run a full npm build on the scratch copy (slow, 10+ minutes)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Compare with upstream
+        id: watch
+        run: |
+          if [ "${{ inputs.build }}" = "true" ]; then extra="--build"; else extra=""; fi
+          node fork/upstream/watch.js --out upstream-report $extra
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-report
+          path: upstream-report
+          if-no-files-found: ignore
+
+      - name: Open, update or close the tracking issue
+        if: steps.watch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANGED: ${{ steps.watch.outputs.changed }}
+          LEVEL: ${{ steps.watch.outputs.level }}
+          KEY: ${{ steps.watch.outputs.key }}
+        run: |
+          set -euo pipefail
+          gh label create upstream-watch --color 0E8A16 --description "Upstream Zotero changes to review" 2>/dev/null || true
+          existing=$(gh issue list --label upstream-watch --state open --limit 1 --json number --jq '.[0].number // empty')
+
+          if [ "$CHANGED" != "true" ]; then
+            if [ -n "$existing" ]; then
+              gh issue close "$existing" --comment "Typos is up to date with the upstream lines being watched. Closing."
+            fi
+            echo "Nothing new upstream."
+            exit 0
+          fi
+
+          marker="<!-- upstream-watch:$KEY -->"
+          { cat upstream-report/report.md; echo; echo "$marker"; } > issue-body.md
+
+          case "$LEVEL" in
+            hold)   title="Upstream Zotero has changes: read before applying" ;;
+            review) title="Upstream Zotero has changes to review" ;;
+            *)      title="Upstream Zotero has low-risk changes" ;;
+          esac
+
+          if [ -z "$existing" ]; then
+            gh issue create --title "$title" --label upstream-watch --body-file issue-body.md
+          elif gh issue view "$existing" --json body --jq .body | grep -qF "$marker"; then
+            echo "Issue #$existing already describes this state of upstream."
+          else
+            gh issue edit "$existing" --title "$title" --body-file issue-body.md
+            gh issue comment "$existing" --body "Upstream moved again. The report above was refreshed ($(date -u +%Y-%m-%d))."
+          fi
