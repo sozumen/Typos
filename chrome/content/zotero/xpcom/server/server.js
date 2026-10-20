@@ -45,6 +45,12 @@ Zotero.Server = new function () {
 		504:"Gateway Timeout"
 	};
 	
+	// The port asked for, and whether the server had to settle for another one (Typos)
+	let preferredPort = null;
+	let usedFallbackPort = false;
+	Object.defineProperty(this, 'preferredPort', { get: () => preferredPort });
+	Object.defineProperty(this, 'usedFallbackPort', { get: () => usedFallbackPort });
+	
 	Object.defineProperty(this, 'port', {
 		get() {
 			if (!serv) {
@@ -66,11 +72,29 @@ Zotero.Server = new function () {
 		// Do any necessary pre-listen initialization first
 		await Zotero.Server.LocalAPI.init();
 
+		// An explicit port (from tests or a caller) is used as given. Otherwise start at the preferred
+		// port and, if it is taken, move up (Typos): see portFallback.js
+		let explicitPort = !!port;
 		port = port || Zotero.Prefs.get('httpServer.port');
+		preferredPort = port;
+		usedFallbackPort = false;
 		try {
-			serv = new HttpServer();
-			serv.registerPrefixHandler('/', this.handleRequest)
-			serv.start(port);
+			let fallback = Zotero.TyposPortFallback || {
+				candidatePorts: p => [p],
+				startWithFallback: (start, ports) => ({ value: start(ports[0]), port: ports[0], usedFallback: false })
+			};
+			let ports = explicitPort ? [port] : fallback.candidatePorts(port);
+			let started = fallback.startWithFallback((p) => {
+				let s = new HttpServer();
+				s.registerPrefixHandler('/', this.handleRequest);
+				s.start(p);
+				return s;
+			}, ports, msg => Zotero.debug(msg));
+			serv = started.value;
+			usedFallbackPort = started.usedFallback;
+			if (usedFallbackPort) {
+				Zotero.debug(`Port ${preferredPort} is in use by another program; using port ${started.port}`);
+			}
 			
 			Zotero.debug(`HTTP server listening on 127.0.0.1:${serv.identity.primaryPort}`);
 				

@@ -191,7 +191,7 @@ Everything here was written in a sandbox without a built Zotero runtime. In part
   Not tried: the installer's click-through screens, the all-users install, the in-app update
   check/prompt/install against a real release, the upstream watcher against real GitHub, anything
   with an actual library, a word processor or a second monitor. See `docs/WINDOWS.md` for what is
-  deliberately not done (code signing, `zotero.exe` rename, Mac installer).
+  deliberately not done (code signing, Mac installer).
 - The Mocha tests inside the app (`test/runtests.sh`) still have not been run.
 - **The in-app Mocha tests have never run**: `test/tests/classicItemTypeTest.js`,
   `itemRelationsTest.js`, `classicalAbbreviationsTest.js`, `jurismImportTest.js`,
@@ -247,7 +247,7 @@ The fork changes upstream files in a few small places (listed below). To update:
    check by hand, `node fork/scripts/build-schema.js --check`.
 4. Re-run both test suites.
 
-Touch points in upstream files: `zotero.mjs` (module list), `xpcom/zotero.js` (init calls),
+Touch points in upstream files: `zotero.mjs` (module list), `xpcom/zotero.js` (init calls), `xpcom/server/server.js` (port fallback) and the Advanced preferences pane (port notice),
 `xpcom/schema.js` (reads the fork schema), `xpcom/data/cachedTypes.js` (icon + primary types),
 `xpcom/data/relations.js` (the `typos:` namespace, prefix `rm:`), `xpcom/cite.js` and `xpcom/style.js`
 (abbreviation hooks), `xpcom/integration.js`, `bibliography.js` and

@@ -257,7 +257,7 @@ Zotero_Preferences.General = {
 			isZotero = /Zotero.*\.app/.test(handler);
 		}
 		else if (Zotero.isWindows) {
-			isZotero = handler.endsWith('\\zotero.exe');
+			isZotero = handler.endsWith('\\zotero.exe') || handler.endsWith('\\typos.exe');
 		}
 		else if (Zotero.isLinux) {
 			isZotero = handler.endsWith('/zotero');

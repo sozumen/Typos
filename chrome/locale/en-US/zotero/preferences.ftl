@@ -92,6 +92,7 @@ preferences-citation-dialog-mode-library =
 
 preferences-advanced-enable-local-api =
     .label = Allow other applications on this computer to communicate with { -app-name }
+preferences-advanced-port-in-use = Port { $preferred } is in use by another program (probably Zotero or Jurism), so { -app-name } is listening on port { $port } instead. The browser connector and the Word and LibreOffice plug-ins look on port { $preferred }, so they will not find { -app-name } until that program is closed and { -app-name } is restarted.
 preferences-advanced-local-api-available = Available at <code data-l10n-name="url">{ $url }</span>
 preferences-advanced-local-api-clear-authorizations =
     .label = Clear Write Authorizations

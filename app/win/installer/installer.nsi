@@ -215,6 +215,14 @@ Section "-InstallStartCleanup"
   ${If} ${Errors}
     ${ManualCloseAppPrompt} "${WindowClass}" "$(WARN_MANUALLY_CLOSE_APP_INSTALL)"
   ${EndIf}
+  ; An install from Typos 10.0.7.1 or earlier has the program under its old name (zotero.exe)
+  ${If} ${FileExists} "$INSTDIR\${LegacyMainEXE}"
+    ClearErrors
+    ${DeleteFile} "$INSTDIR\${LegacyMainEXE}"
+    ${If} ${Errors}
+      ${ManualCloseAppPrompt} "${WindowClass}" "$(WARN_MANUALLY_CLOSE_APP_INSTALL)"
+    ${EndIf}
+  ${EndIf}
 
   SetDetailsPrint both
   DetailPrint $(STATUS_CLEANUP)
@@ -232,6 +240,14 @@ Section "-InstallStartCleanup"
     ; can rename the file and then delete is when the system is restarted.
     Sleep 5000
     ${DeleteFile} "$INSTDIR\${FileMainEXE}"
+    ClearErrors
+  ${EndIf}
+  ${If} ${FileExists} "$INSTDIR\${LegacyMainEXE}"
+    ${DeleteFile} "$INSTDIR\${LegacyMainEXE}"
+    ${If} ${Errors}
+      Sleep 5000
+      ${DeleteFile} "$INSTDIR\${LegacyMainEXE}"
+    ${EndIf}
     ClearErrors
   ${EndIf}
 
@@ -327,6 +343,17 @@ Section "-Application" APP_IDX
   StrCpy $0 "Software\Microsoft\Windows\CurrentVersion\App Paths\${FileMainEXE}"
   ${WriteRegStr2} $TmpVal "$0" "" "$INSTDIR\${FileMainEXE}" 0
   ${WriteRegStr2} $TmpVal "$0" "Path" "$INSTDIR" 0
+
+  ; Typos 10.0.7.1 and earlier registered itself under the name zotero.exe. Remove that entry, but
+  ; only if it points at this install: a real Zotero may own the same key.
+  ReadRegStr $R0 HKCU "Software\Microsoft\Windows\CurrentVersion\App Paths\${LegacyMainEXE}" ""
+  ${If} $R0 == "$INSTDIR\${LegacyMainEXE}"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\App Paths\${LegacyMainEXE}"
+  ${EndIf}
+  ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\${LegacyMainEXE}" ""
+  ${If} $R0 == "$INSTDIR\${LegacyMainEXE}"
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\${LegacyMainEXE}"
+  ${EndIf}
 
   ${If} $TmpVal == "HKLM"
     ; Set the permitted LSP Categories for WinVista and above
@@ -1017,9 +1044,27 @@ Function .onInit
         ${EndIf}
     ${EndIf}
   ${EndIf}
+  ; Updating from Typos 10.0.7.1 or earlier: the program that is closing is still called zotero.exe.
+  ; Wait for it, but never kill it by that name (a real Zotero uses the same name). If it is still
+  ; running afterwards, the step that removes the old file asks the person to close it.
+  ClearErrors
+  ${GetParameters} $R1
+  ${GetOptions} "$R1" "/Updating" $R1
+  ${IfNot} ${Errors}
+    ${nsProcess::FindProcess} ${LegacyMainEXE} $R3
+    StrCpy $R2 0
+    wait_for_legacy_exit:
+      ${If} $R3 = 0
+      ${AndIf} $R2 < 30
+        Sleep 1000
+        IntOp $R2 $R2 + 1
+        ${nsProcess::FindProcess} ${LegacyMainEXE} $R3
+        Goto wait_for_legacy_exit
+      ${EndIf}
+  ${EndIf}
   ${If} $R0 = 0
     IfSilent +3
-    MessageBox MB_OK|MB_ICONSTOP "Typos is already running. Please close Typos before running the installer.$\n$\n(If you are running Zotero, close it too: both programs use a file called zotero.exe.)"
+    MessageBox MB_OK|MB_ICONSTOP "Typos is already running. Please close Typos before running the installer."
     Quit
     ${nsProcess::KillProcess} ${FileMainEXE} $R0
     Sleep 500

@@ -955,10 +955,11 @@ if [ $BUILD_WIN == 1 ]; then
 		# Firefox ARM64 builds for use with the EME DRM plugins
 		cp -R "$runtime_path"/!(application.ini|browser|crashreporter*|default-browser-agent.exe|defaultagent*|defaults|devtools-files|firefox*|i686|maintenanceservice*|minidump-analyzer.exe|pingsender.exe|private_browsing*|precomplete|removed-files|uninstall|update*) "$APPDIR"
 
-		# Copy zotero.exe, which is built directly from Firefox source and then modified by
-		# ResourceHacker to add icons
+		# Copy the launcher, which is built directly from Firefox source and then modified by
+		# ResourceHacker to add icons. Zotero ships it as zotero.exe; Typos installs it as typos.exe.
+		# (Nothing in the launcher depends on its own file name: it finds application.ini next to itself.)
 		check_lfs_file "$CALLDIR/win/zotero.exe.tar.xz"
-		tar xf "$CALLDIR/win/zotero.exe.tar.xz" --to-stdout zotero_$arch.exe > "$APPDIR/zotero.exe"
+		tar xf "$CALLDIR/win/zotero.exe.tar.xz" --to-stdout zotero_$arch.exe > "$APPDIR/typos.exe"
 		
 		# Use our own updater, because Mozilla's requires updates signed by Mozilla
 		check_lfs_file "$CALLDIR/win/updater.exe.tar.xz"
@@ -972,7 +973,7 @@ if [ $BUILD_WIN == 1 ]; then
 			#
 			# rebrand_exe also swaps in the Typos icon and replaces the Zotero company, product
 			# and trademark strings
-			"$CALLDIR/win/rebrand_exe" launcher "$APPDIR/zotero.exe" "$VERSION" "$VERSION_NUMERIC"
+			"$CALLDIR/win/rebrand_exe" launcher "$APPDIR/typos.exe" "$VERSION" "$VERSION_NUMERIC"
 			"$CALLDIR/win/rebrand_exe" updater "$APPDIR/updater.exe" "$VERSION" "$VERSION_NUMERIC"
 		fi
 		
@@ -1024,7 +1025,7 @@ if [ $BUILD_WIN == 1 ]; then
 		find "$APPDIR" \( -name '*.exe' -or -name '*.dll' \) -exec chmod 755 {} \;
 		
 		if [[ $PACKAGE -eq 1 ]] && [[ $SIGN -eq 1 ]]; then
-			"$CALLDIR/win/codesign" "$APPDIR/zotero.exe" "$SIGNATURE_DESC"
+			"$CALLDIR/win/codesign" "$APPDIR/typos.exe" "$SIGNATURE_DESC"
 			sleep $SIGNTOOL_DELAY
 			"$CALLDIR/win/codesign" "$APPDIR/updater.exe" "$SIGNATURE_DESC Updater"
 			sleep $SIGNTOOL_DELAY

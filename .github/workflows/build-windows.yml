@@ -241,6 +241,33 @@ jobs:
 
       # Install it the way a person would (just for this user, silently) and look at the result.
       # The ARM64 installer can't be tried on x64 runners, and vice versa.
+      # The previous release (if any) is installed first, so the test install below is also an upgrade
+      # from it. Releases up to 10.0.7.1 called the program zotero.exe; later ones call it typos.exe.
+      - name: Install the previous release
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          trap { Write-Host "::error title=Install the previous release::$($_.Exception.Message -replace "`r?`n",'%0A')"; exit 1 }
+          $prev = (gh api "repos/$env:GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>$null)
+          if (-not $prev -or $LASTEXITCODE -ne 0) { 'No earlier release; skipping the upgrade test.'; "PREVIOUS_RELEASE=" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV; exit 0 }
+          if ($prev -eq "v$env:VERSION") { "Latest release is this version ($prev); skipping the upgrade test."; "PREVIOUS_RELEASE=" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV; exit 0 }
+          "Upgrading from $prev"
+          New-Item -ItemType Directory -Force -Path prev | Out-Null
+          gh release download $prev --repo $env:GITHUB_REPOSITORY --pattern '*_x64_setup.exe' --dir prev
+          if ($LASTEXITCODE -ne 0) { throw "Could not download $prev" }
+          $old = Get-ChildItem prev -Filter *_x64_setup.exe | Select-Object -First 1
+          $p = Start-Process -FilePath $old.FullName -ArgumentList '/S','/CurrentUser' -Wait -PassThru
+          "Old installer exit code: $($p.ExitCode)"
+          $dir = Join-Path $env:LOCALAPPDATA 'Typos'
+          $names = (Get-ChildItem $dir -Filter *.exe -ErrorAction SilentlyContinue | ForEach-Object { $_.Name }) -join ', '
+          "Programs in the old install: $names"
+          if (-not ($names -match 'zotero.exe|typos.exe')) { throw "The previous release did not install ($names)" }
+          "PREVIOUS_RELEASE=$prev" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "PREVIOUS_HAD_ZOTERO_EXE=$([bool](Test-Path (Join-Path $dir 'zotero.exe')))" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
       - name: Test install
         if: matrix.arch == 'x64'
         shell: pwsh
@@ -250,18 +277,20 @@ jobs:
           $p = Start-Process -FilePath $env:INSTALLER -ArgumentList '/S','/CurrentUser' -Wait -PassThru
           "Installer exit code: $($p.ExitCode)"
           $dir = Join-Path $env:LOCALAPPDATA 'Typos'
-          if (-not (Test-Path (Join-Path $dir 'zotero.exe'))) {
+          if (-not (Test-Path (Join-Path $dir 'typos.exe'))) {
             $where = (Get-ChildItem $env:LOCALAPPDATA, $env:ProgramFiles -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*Typos*' -or $_.Name -like '*Zotero*' } | ForEach-Object { $_.FullName }) -join '; '
             $logs = Get-ChildItem (Join-Path $env:ProgramFiles 'Typos') -Recurse -Filter *.log -ErrorAction SilentlyContinue | ForEach-Object { "$($_.FullName):`n" + ((Get-Content $_.FullName -Tail 30) -join "`n") }
-            throw "Installer exit code $($p.ExitCode); zotero.exe is not in $dir. Typos/Zotero folders found: $where`n$($logs -join "`n")"
+            throw "Installer exit code $($p.ExitCode); typos.exe is not in $dir. Typos/Zotero folders found: $where`n$($logs -join "`n")"
           }
+          if (Test-Path (Join-Path $dir 'zotero.exe')) { throw 'zotero.exe is still in the install folder (the old name should have been removed)' }
           foreach ($f in 'updater.exe','xul.dll','app\application.ini','uninstall\helper.exe') {
             if (-not (Test-Path (Join-Path $dir $f))) { throw "$f is missing from the install" }
           }
-          $vi = (Get-Item (Join-Path $dir 'zotero.exe')).VersionInfo
-          "ProductName=$($vi.ProductName) ProductVersion=$($vi.ProductVersion) FileDescription=$($vi.FileDescription) Company=$($vi.CompanyName)"
-          if ($vi.ProductName -ne 'Typos') { throw "zotero.exe still says ProductName '$($vi.ProductName)'" }
-          if ($vi.ProductVersion -ne $env:VERSION) { throw "zotero.exe ProductVersion is '$($vi.ProductVersion)', expected $env:VERSION" }
+          $vi = (Get-Item (Join-Path $dir 'typos.exe')).VersionInfo
+          "ProductName=$($vi.ProductName) ProductVersion=$($vi.ProductVersion) FileDescription=$($vi.FileDescription) Company=$($vi.CompanyName) OriginalFilename=$($vi.OriginalFilename)"
+          if ($vi.ProductName -ne 'Typos') { throw "typos.exe says ProductName '$($vi.ProductName)'" }
+          if ($vi.ProductVersion -ne $env:VERSION) { throw "typos.exe ProductVersion is '$($vi.ProductVersion)', expected $env:VERSION" }
+          if ($vi.OriginalFilename -ne 'typos.exe') { throw "typos.exe says OriginalFilename '$($vi.OriginalFilename)'" }
           $ini = Get-Content (Join-Path $dir 'app\application.ini') -Raw
           if ($ini -notmatch "Version=$([regex]::Escape($env:VERSION))") { throw 'application.ini has the wrong version' }
           if ($ini -notmatch 'Name=Typos') { throw 'application.ini does not say Typos' }
@@ -270,6 +299,17 @@ jobs:
             Where-Object { $_.DisplayName -like 'Typos*' }
           if (-not $reg) { throw 'No Typos entry under Apps & features (HKCU uninstall key)' }
           "Uninstall entry: $($reg.DisplayName) $($reg.DisplayVersion)"
+
+          # "App Paths" is how Windows finds a program by name (Win+R, Start): it must name typos.exe, and
+          # the old zotero.exe entry (if this was an upgrade) must be gone
+          $appPaths = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths'
+          if ((Get-ItemProperty "$appPaths\typos.exe" -ErrorAction SilentlyContinue).'(default)' -ne (Join-Path $dir 'typos.exe')) {
+            throw "App Paths\typos.exe is missing or points elsewhere: '$((Get-ItemProperty "$appPaths\typos.exe" -ErrorAction SilentlyContinue).'(default)')'"
+          }
+          if (Test-Path "$appPaths\zotero.exe") { throw 'App Paths\zotero.exe is still registered (should have been removed on upgrade)' }
+          if ($env:PREVIOUS_RELEASE) {
+            "Upgrade from $env:PREVIOUS_RELEASE (it had zotero.exe: $env:PREVIOUS_HAD_ZOTERO_EXE) worked."
+          }
 
       - name: Test that the app starts
         if: matrix.arch == 'x64'
@@ -282,7 +322,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $profile | Out-Null
           $out = Join-Path $env:RUNNER_TEMP 'typos-stdout.txt'
           $err = Join-Path $env:RUNNER_TEMP 'typos-stderr.txt'
-          $proc = Start-Process -FilePath (Join-Path $dir 'zotero.exe') -ArgumentList '-no-remote','-ZoteroDebugText','-profile',"`"$profile`"" -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
+          $proc = Start-Process -FilePath (Join-Path $dir 'typos.exe') -ArgumentList '-no-remote','-ZoteroDebugText','-profile',"`"$profile`"" -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
           $ok = $false
           for ($i = 0; $i -lt 90; $i++) {
             Start-Sleep -Seconds 2
@@ -295,26 +335,94 @@ jobs:
           }
           if (-not $ok) {
             $facts = @()
-            $facts += 'Windows: ' + ((Get-Process -Name zotero -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | ForEach-Object { "'$($_.MainWindowTitle)'" }) -join ', ')
-            $facts += 'Listening ports of zotero: ' + ((Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name -eq 'zotero' } | ForEach-Object { $_.LocalPort }) -join ',')
+            $facts += 'Windows: ' + ((Get-Process -Name typos -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | ForEach-Object { "'$($_.MainWindowTitle)'" }) -join ', ')
+            $facts += 'Listening ports of typos: ' + ((Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name -eq 'typos' } | ForEach-Object { $_.LocalPort }) -join ',')
             $facts += 'Profile files: ' + ((Get-ChildItem $profile -ErrorAction SilentlyContinue | ForEach-Object { $_.Name }) -join ', ')
             foreach ($f in $out, $err) { if (Test-Path $f) { $facts += "--- $f ($((Get-Item $f).Length) bytes)"; $facts += (Get-Content $f -Tail 40) } }
             Write-Host "::warning title=Typos start-up facts::$(($facts -join "`n") -replace "`r?`n",'%0A')"
-            $running = (Get-Process -Name zotero -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Id)" }) -join ','
-            Get-Process -Name zotero -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-            throw "Typos did not answer on its local port within three minutes (zotero processes running: '$running')"
+            $running = (Get-Process -Name typos -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Id)" }) -join ','
+            Get-Process -Name typos -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            throw "Typos did not answer on its local port within three minutes (typos processes running: '$running')"
           }
           'Typos started and answered.'
           # The port answers while the first-run progress window may still be up; wait for the main window
           for ($i = 0; $i -lt 40; $i++) {
-            $titles = (Get-Process -Name zotero -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | ForEach-Object { $_.MainWindowTitle }) -join '; '
+            $titles = (Get-Process -Name typos -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | ForEach-Object { $_.MainWindowTitle }) -join '; '
             if ($titles -match 'Typos') { break }
             Start-Sleep -Seconds 3
           }
           "Window title: $titles"
           if ($titles -notmatch 'Typos') { throw "The main window title doesn't say Typos: '$titles'" }
-          Get-Process -Name zotero -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+          # Which window classes does the running app have? The installer looks for "ZoteroMessageWindow" to
+          # find a running copy; the class name is compiled into Gecko, so this shows whether renaming the
+          # program changed it. Reported, not enforced.
+          Add-Type -TypeDefinition @"
+          using System;
+          using System.Text;
+          using System.Collections.Generic;
+          using System.Runtime.InteropServices;
+          public class WinProbe {
+            delegate bool EnumProc(IntPtr h, IntPtr l);
+            [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc p, IntPtr l);
+            [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+            [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+            public static List<string> Classes(HashSet<uint> pids) {
+              var found = new List<string>();
+              EnumWindows((h, l) => {
+                uint pid; GetWindowThreadProcessId(h, out pid);
+                if (pids.Contains(pid)) { var sb = new StringBuilder(256); GetClassName(h, sb, 256); found.Add(sb.ToString()); }
+                return true;
+              }, IntPtr.Zero);
+              return found;
+            }
+          }
+          "@
+          $pids = [System.Collections.Generic.HashSet[uint32]]::new()
+          Get-Process -Name typos -ErrorAction SilentlyContinue | ForEach-Object { [void]$pids.Add([uint32]$_.Id) }
+          $classes = [WinProbe]::Classes($pids) | Sort-Object -Unique
+          Write-Host "::notice title=Window classes of the running app::$($classes -join ', ')"
+          if ($classes -notcontains 'ZoteroMessageWindow') {
+            Write-Host "::warning title=Window class::ZoteroMessageWindow was not found among: $($classes -join ', '). The installer's running-copy check (WindowClass in defines.nsi) may need the real name."
+          }
+          Get-Process -Name typos -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           Start-Sleep -Seconds 3
+
+      # Something else is already on port 23119 (as when Zotero is running): Typos should take the next port
+      - name: Test the port fallback
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          trap { Write-Host "::error title=$($MyInvocation.MyCommand.Name) step::$($_.Exception.Message -replace "`r?`n",'%0A')"; exit 1 }
+          $dir = Join-Path $env:LOCALAPPDATA 'Typos'
+          $profile = Join-Path $env:RUNNER_TEMP 'smoke-profile-fallback'
+          New-Item -ItemType Directory -Force -Path $profile | Out-Null
+          $blocker = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 23119)
+          $blocker.Start()
+          try {
+            $proc = Start-Process -FilePath (Join-Path $dir 'typos.exe') -ArgumentList '-no-remote','-ZoteroDebugText','-profile',"`"$profile`"" -PassThru
+            $port = $null
+            for ($i = 0; $i -lt 90 -and -not $port; $i++) {
+              Start-Sleep -Seconds 2
+              foreach ($candidate in 23120..23129) {
+                try {
+                  $r = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$candidate/connector/ping" -TimeoutSec 2 -UserAgent 'typos-ci' -Headers @{ 'X-Zotero-Connector-API-Version' = '3' }
+                  if ($r.StatusCode -eq 200) { $port = $candidate; break }
+                } catch { }
+              }
+            }
+            if (-not $port) {
+              $ports = (Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name -eq 'typos' } | ForEach-Object { $_.LocalPort }) -join ','
+              throw "With port 23119 taken, Typos did not answer on 23120-23129 (listening ports of typos: $ports)"
+            }
+            "With port 23119 taken, Typos answered on port $port."
+          }
+          finally {
+            $blocker.Stop()
+            Get-Process -Name typos -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 3
+          }
 
       - name: Test uninstall
         if: matrix.arch == 'x64'
@@ -327,7 +435,8 @@ jobs:
           $p = Start-Process -FilePath $un -ArgumentList '/S' -Wait -PassThru
           "Uninstaller exit code: $($p.ExitCode)"
           Start-Sleep -Seconds 5
-          if (Test-Path (Join-Path $dir 'zotero.exe')) { throw 'zotero.exe is still there after uninstalling' }
+          if (Test-Path (Join-Path $dir 'typos.exe')) { throw 'typos.exe is still there after uninstalling' }
+          if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\typos.exe') { throw 'App Paths\typos.exe is still registered after uninstalling' }
 
   release:
     name: Publish release

@@ -154,6 +154,7 @@ const xpcomFilesLocal = [
 	'retractions',
 	'router',
 	'schema',
+	'server/portFallback',
 	'server/server',
 	'server/server_integration',
 	'server/server_connector',

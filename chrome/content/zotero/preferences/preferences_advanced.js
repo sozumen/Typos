@@ -432,7 +432,21 @@ Zotero_Preferences.Advanced = {
 		}
 	},
 
+	// Typos: say so when the local server had to use a different port than the usual one
+	updatePortNotice() {
+		let notice = document.getElementById('zotero-prefpane-advanced-port-notice');
+		let fallback = Zotero.Prefs.get('httpServer.enabled') && Zotero.Server.usedFallbackPort;
+		notice.hidden = !fallback;
+		if (fallback) {
+			document.l10n.setArgs(notice, {
+				preferred: String(Zotero.Server.preferredPort),
+				port: String(Zotero.Server.port)
+			});
+		}
+	},
+	
 	updateLocalAPIUI() {
+		this.updatePortNotice();
 		let serverEnabled = Zotero.Prefs.get('httpServer.enabled');
 		let localAPIEnabled = Zotero.Prefs.get('httpServer.localAPI.enabled');
 		

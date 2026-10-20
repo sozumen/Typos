@@ -88,7 +88,7 @@ elif [ "`uname`" = "Linux" ]; then
 		command="Typos_linux-x86_64/zotero"
 	fi
 elif [ "`uname -o 2> /dev/null`" = "Cygwin" ]; then
-	command="Typos_win-x64/zotero.exe"
+	command="Typos_win-x64/typos.exe"
 else
 	echo "Unknown platform" >&2
 	exit 1

@@ -15,9 +15,13 @@
 !define GREVersion            2.0
 !define AB_CD                 "en-US"
 
-!define FileMainEXE           "zotero.exe"
+!define FileMainEXE           "typos.exe"
+; Typos 10.0.7.1 and earlier installed the same program as zotero.exe. The installer removes that file
+; when it upgrades such an install.
+!define LegacyMainEXE         "zotero.exe"
 ; The window class is compiled into the prebuilt Gecko binaries as <MOZ_APP_NAME>MessageWindow, so it
-; still reads "Zotero" even though the application is Typos. Do not rename it here without rebuilding Gecko.
+; still reads "Zotero" even though the application is Typos, and the file name does not change it.
+; Do not rename it here without rebuilding Gecko.
 !define WindowClass           "ZoteroMessageWindow"
 !define AppRegName            "Typos"
 

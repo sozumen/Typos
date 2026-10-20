@@ -5,7 +5,7 @@
 #
 # Usage: rebrand_exe launcher|updater|sfx path/to/file.exe VERSION VERSION_NUMERIC
 #
-#   launcher  zotero.exe       icon groups 1 and 32512 replaced, version strings replaced
+#   launcher  typos.exe        icon groups 1 and 32512 replaced, version strings replaced
 #   updater   updater.exe      version strings replaced
 #   sfx       7zSD.sfx stub    icon group replaced, version strings replaced
 set -euo pipefail
@@ -59,12 +59,14 @@ set_icons() {
 
 set_strings() {
 	local desc=$1
+	local original_name=$2
 	rcedit "$(winpath "$target")" \
 		--set-file-version "$version_numeric" \
 		--set-product-version "$version" \
 		--set-version-string CompanyName "Typos project" \
 		--set-version-string FileDescription "$desc" \
 		--set-version-string InternalName "Typos" \
+		--set-version-string OriginalFilename "$original_name" \
 		--set-version-string ProductName "Typos" \
 		--set-version-string LegalCopyright "$COPYRIGHT" \
 		--set-version-string LegalTrademarks "$TRADEMARKS"
@@ -73,16 +75,16 @@ set_strings() {
 case $kind in
 	launcher)
 		set_icons "1 32512"
-		set_strings "Typos"
+		set_strings "Typos" "typos.exe"
 		;;
 	updater)
-		set_strings "Typos Updater"
+		set_strings "Typos Updater" "updater.exe"
 		;;
 	sfx)
 		# The stub's own icon is group 159 (IDI_ICON3); also add group 1, which sorts first,
 		# so Explorer picks the Typos icon either way
 		set_icons "1 159"
-		set_strings "Typos Setup"
+		set_strings "Typos Setup" "7zSD.sfx"
 		;;
 	*)
 		echo "Unknown kind: $kind" >&2

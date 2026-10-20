@@ -23,9 +23,9 @@ Typos-10.0.7.3_x64_setup.exe /S /AllUsers
 installing somewhere else. `/D=C:\some\folder` (last on the line) picks the folder.
 
 Typos installs next to Zotero without replacing it (own name, own Start-menu entry, own uninstall
-entry, own data folder). Two things are still shared and can collide if both are installed:
-the program file is still called `zotero.exe` and the `zotero://` link handler can point at only one
-of them. See "Not done" below.
+entry, own data folder, and the program is `typos.exe`, so the two don't share a file name or a
+Windows "App Paths" entry). Some things are still shared and can collide if both are installed and
+running; see "Running next to Zotero" below.
 
 Windows SmartScreen will say the publisher is unknown, because the installer is not code-signed
 (signing needs a purchased certificate). Choose **More info, then Run anyway**. Each release has a
@@ -84,13 +84,27 @@ four-part version. Two inputs are downloaded rather than stored in this reposito
 If a build fails, the first places to look are the "Download build tools", "Install NSIS plug-ins" and
 "Build" steps in the run log. Failures there are usually a download URL that moved.
 
+## Running next to Zotero
+
+You can have both installed. Running both at the same moment is not fully supported:
+
+- **The local port.** Typos listens on port 23119, like Zotero, because the browser connector, the
+  Word and LibreOffice plug-ins and local-API tools look there. If another program already has it, Typos
+  takes the next free port (23120 to 23129) instead of running with no server, and Settings > Advanced
+  says which port it got. Anything that looks only on 23119 (the browser connector, the plug-ins) will
+  then reach the other program, not Typos.
+- **The `zotero://` link handler** can point at only one program.
+- **Word integration** has one "Zotero" add-in, shared by whatever is installed. It has not been tried with Typos.
+- The window class Gecko uses to find a running copy is compiled into the prebuilt program, so it is
+  still called `ZoteroMessageWindow` for both.
+
+Upgrading from 10.0.7.1 or earlier: those releases installed the program as `zotero.exe`. The newer
+installer removes that file and its "App Paths" entry (only if they belong to the Typos install being
+upgraded) and creates `typos.exe`. A taskbar pin made from the old shortcut will need to be re-pinned.
+
 ## Not done
 
 - **No code signing** (SmartScreen warning; the update check is integrity-only, see above).
-- **Still named `zotero.exe`.** The launcher is a prebuilt program from Zotero. Renaming it means
-  checking everything that looks for that name (the Word plug-in, the updater, window class,
-  the NSIS uninstall logic). Until then, don't run Typos and Zotero at the same moment, and expect
-  `zotero://` links to go to whichever was installed or started last.
 - **No Mac installer.** The icon source for a `.icns` file isn't built, and nothing here was run on a Mac.
 - Update prompts and installer text are English only.
 - Per-machine installs updated by a user without administrator rights will ask Windows for
