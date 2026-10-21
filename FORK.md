@@ -260,7 +260,8 @@ Everything here was written in a sandbox without a built Zotero runtime. In part
 See `docs/WINDOWS.md`. Short version: GitHub Actions builds `Typos-<version>_x64_setup.exe`; the
 installer offers "just me" (no administrator) or "everyone"; Typos checks GitHub Releases and asks
 before it updates itself; a release is made by pushing a tag like `v10.0.7.3` or running the
-**Build Windows installer** workflow.
+**Build Windows installer** workflow. Installers are published in the public repository
+`sozumen/typos-releases` (secret `RELEASES_TOKEN`), so this repository can be private.
 
 ## Keeping up with upstream Zotero
 

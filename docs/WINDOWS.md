@@ -44,11 +44,29 @@ What the check protects against: a damaged or truncated download. What it does n
 someone who gets control of the GitHub repository and uploads a bad installer with a matching
 checksum. That would need code signing and a signature check, which is not set up.
 
-**The repository must be public for this to work.** The app asks GitHub for the latest release
-without logging in, and a private repository answers "not found". Either make `sozumen/typos`
-public, or keep the code private and publish only the installers to a second public repository
-(then change the default for the preference `extensions.zotero.typosUpdate.repo` in
-`defaults/preferences/zotero.js` to that repository).
+**Where installers are published.** From 10.0.7.4, installers go to a separate public
+repository, `sozumen/typos-releases`, which holds nothing but releases; the code repository
+(`sozumen/typos`) can then be private. The app asks that repository for the latest release without
+logging in (preference `extensions.zotero.typosUpdate.repo`). Releases up to 10.0.7.3 were published
+in the code repository, and copies of those look there; 10.0.7.4 was published in both places so
+they find it, and after that they look in the releases repository.
+
+Only installers are published, not source code. Typos is built from Zotero, which is under the
+AGPL, so anyone who receives an installer can ask for the source of that version; answering such
+requests is up to you.
+
+### One-time setup for the releases repository
+
+1. Create the public repository `sozumen/typos-releases` on GitHub, with a README (a release needs
+   at least one commit to point at).
+2. Create a fine-grained personal access token (GitHub > Settings > Developer settings > Personal
+   access tokens > Fine-grained tokens) with access to **only** `sozumen/typos-releases` and the
+   permission **Contents: Read and write**. Choose an expiry date and note it.
+3. In `sozumen/typos`, add it under Settings > Secrets and variables > Actions as a repository
+   secret named `RELEASES_TOKEN`.
+
+When the token expires, publishing fails with "RELEASES_TOKEN can't publish"; make a new one and
+replace the secret. Builds that don't publish don't need it.
 
 ## Making a release ("updating from here")
 
@@ -61,7 +79,9 @@ Version numbers are `10.0.7.N`: the first three numbers are the Zotero release T
    *Publish*. Leave *Publish* off for a test build you only download from the run.
 3. The workflow runs the fast tests, builds the app, builds the installer, installs it on the Windows
    runner, starts the app, checks that it answers on its local port, and uninstalls it. Only if all
-   of that passes does it publish the release (installer plus `SHA256SUMS`).
+   of that passes does it publish the release (installer plus `SHA256SUMS`) in
+   `sozumen/typos-releases`. The run stops at the start if `RELEASES_TOKEN` is missing or can't
+   write there. *Also publish in this repository* is only for moving old copies over (10.0.7.4).
 4. Everyone running Typos is offered the update the next time their copy checks.
 
 The workflow can also build `arm64` and `win32` installers: in the run form set *archs* to

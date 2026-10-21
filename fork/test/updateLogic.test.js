@@ -11,7 +11,7 @@ function release(overrides = {}) {
 		tag_name: 'v10.0.7.3',
 		name: 'Typos 10.0.7.3',
 		body: '## What changed\n\n- **Fixed** the thing',
-		html_url: 'https://github.com/sozumen/typos/releases/tag/v10.0.7.3',
+		html_url: 'https://github.com/sozumen/typos-releases/releases/tag/v10.0.7.3',
 		draft: false,
 		prerelease: false,
 		published_at: '2026-10-20T12:00:00Z',
@@ -19,12 +19,12 @@ function release(overrides = {}) {
 			{
 				name: 'Typos-10.0.7.3_x64_setup.exe',
 				size: 104857600,
-				browser_download_url: 'https://github.com/sozumen/typos/releases/download/v10.0.7.3/Typos-10.0.7.3_x64_setup.exe'
+				browser_download_url: 'https://github.com/sozumen/typos-releases/releases/download/v10.0.7.3/Typos-10.0.7.3_x64_setup.exe'
 			},
 			{
 				name: 'SHA256SUMS',
 				size: 200,
-				browser_download_url: 'https://github.com/sozumen/typos/releases/download/v10.0.7.3/SHA256SUMS'
+				browser_download_url: 'https://github.com/sozumen/typos-releases/releases/download/v10.0.7.3/SHA256SUMS'
 			}
 		]
 	}, overrides);
@@ -235,4 +235,10 @@ test('formatSize', () => {
 	assert.equal(L.formatSize(900), '900 bytes');
 	assert.equal(L.formatSize(0), '');
 	assert.equal(L.formatSize(null), '');
+});
+
+test('updates come from the public releases repository by default', () => {
+	assert.equal(L.DEFAULT_REPO, 'sozumen/typos-releases');
+	let prefs = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', '..', 'defaults/preferences/zotero.js'), 'utf8');
+	assert.match(prefs, /pref\("extensions\.zotero\.typosUpdate\.repo", "sozumen\/typos-releases"\)/);
 });

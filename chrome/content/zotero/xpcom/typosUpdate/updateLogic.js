@@ -16,7 +16,7 @@
  * Tested in plain Node: fork/test/updateLogic.test.js
  */
 (function (root) {
-	const DEFAULT_REPO = 'sozumen/typos';
+	const DEFAULT_REPO = 'sozumen/typos-releases';
 	const DAY = 24 * 60 * 60 * 1000;
 
 	// Where a release's files may come from. A release listing that points elsewhere is refused.

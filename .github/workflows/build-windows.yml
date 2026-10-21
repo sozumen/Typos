@@ -24,6 +24,11 @@ on:
         required: true
         type: boolean
         default: false
+      also_main_repo:
+        description: 'Also publish the release in this repository (only for moving existing copies over to the releases repository)'
+        required: false
+        type: boolean
+        default: false
       archs:
         description: 'Installers to build, as a JSON list of x64, arm64, win32'
         required: false
@@ -32,6 +37,12 @@ on:
 
 permissions:
   contents: write
+
+# Installers are published in a separate public repository, so this one can stay private. Typos
+# looks for updates there (extensions.zotero.typosUpdate.repo). Publishing needs a token that can
+# write to it, saved in this repository as the Actions secret RELEASES_TOKEN (see docs/WINDOWS.md).
+env:
+  RELEASES_REPO: sozumen/typos-releases
 
 concurrency:
   group: build-windows-${{ github.ref }}
@@ -92,6 +103,21 @@ jobs:
             echo "publish=$publish"
             echo "archs=$archs"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Check publishing can work
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error title=No RELEASES_TOKEN::Add a token that can write to $RELEASES_REPO as the Actions secret RELEASES_TOKEN (docs/WINDOWS.md), or run without publish."
+            exit 1
+          fi
+          if ! gh api "repos/$RELEASES_REPO" --jq '.permissions.push' | grep -qx true; then
+            echo "::error title=RELEASES_TOKEN can't publish::The token can't write to $RELEASES_REPO (or the repository doesn't exist)."
+            exit 1
+          fi
 
       - name: Check the tests pass first
         run: .github/scripts/ci-run 'Fast tests' node --test fork/test/*.test.js
@@ -251,12 +277,18 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           trap { Write-Host "::error title=Install the previous release::$($_.Exception.Message -replace "`r?`n",'%0A')"; exit 1 }
-          $prev = (gh api "repos/$env:GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>$null)
+          # Releases up to 10.0.7.3 were published in this repository; later ones in the releases repository
+          $from = $env:RELEASES_REPO
+          $prev = (gh api "repos/$from/releases/latest" --jq .tag_name 2>$null)
+          if (-not $prev -or $LASTEXITCODE -ne 0) {
+            $from = $env:GITHUB_REPOSITORY
+            $prev = (gh api "repos/$from/releases/latest" --jq .tag_name 2>$null)
+          }
           if (-not $prev -or $LASTEXITCODE -ne 0) { 'No earlier release; skipping the upgrade test.'; "PREVIOUS_RELEASE=" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV; exit 0 }
           if ($prev -eq "v$env:VERSION") { "Latest release is this version ($prev); skipping the upgrade test."; "PREVIOUS_RELEASE=" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV; exit 0 }
           "Upgrading from $prev"
           New-Item -ItemType Directory -Force -Path prev | Out-Null
-          gh release download $prev --repo $env:GITHUB_REPOSITORY --pattern '*_x64_setup.exe' --dir prev
+          gh release download $prev --repo $from --pattern '*_x64_setup.exe' --dir prev
           if ($LASTEXITCODE -ne 0) { throw "Could not download $prev" }
           $old = Get-ChildItem prev -Filter *_x64_setup.exe | Select-Object -First 1
           $p = Start-Process -FilePath $old.FullName -ArgumentList '/S','/CurrentUser' -Wait -PassThru
@@ -465,8 +497,10 @@ jobs:
 
       - name: Create the release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          MAIN_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.prepare.outputs.version }}
+          ALSO_MAIN: ${{ inputs.also_main_repo }}
         run: |
           set -euo pipefail
           tag="v$VERSION"
@@ -479,13 +513,20 @@ jobs:
 
           The installer is not code-signed, so Windows SmartScreen will say the publisher is unknown. Choose More info, then Run anyway. \`SHA256SUMS\` lists the checksum of each installer.
           EOF
-          if gh release view "$tag" > /dev/null 2>&1; then
-            echo "Release $tag exists -- replacing its files"
-            gh release upload "$tag" dist/* --clobber
-          else
-            gh release create "$tag" dist/* \
-              --target "$GITHUB_SHA" \
-              --title "Typos $VERSION" \
-              --notes-file notes.md \
-              --generate-notes
+          # The tag in the releases repository points at its own default branch: the source
+          # commit isn't there (that repository holds no code)
+          publish() {
+            local repo="$1"
+            if gh release view "$tag" --repo "$repo" > /dev/null 2>&1; then
+              echo "Release $tag exists in $repo -- replacing its files"
+              gh release upload "$tag" dist/* --repo "$repo" --clobber
+            else
+              gh release create "$tag" dist/* --repo "$repo" \
+                --title "Typos $VERSION" \
+                --notes-file notes.md
+            fi
+          }
+          publish "$RELEASES_REPO"
+          if [ "$ALSO_MAIN" = "true" ]; then
+            GH_TOKEN="$MAIN_TOKEN" publish "$GITHUB_REPOSITORY"
           fi

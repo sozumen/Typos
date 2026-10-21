@@ -74,7 +74,7 @@ pref("extensions.zotero.styleAI.acknowledged", false);
 
 // Typos updates (xpcom/typosUpdate): check GitHub Releases, ask before doing anything
 pref("extensions.zotero.typosUpdate.enabled", true);
-pref("extensions.zotero.typosUpdate.repo", "sozumen/typos");
+pref("extensions.zotero.typosUpdate.repo", "sozumen/typos-releases");
 pref("extensions.zotero.typosUpdate.intervalHours", 24);
 // Milliseconds since the epoch, as text: too big for an integer pref
 pref("extensions.zotero.typosUpdate.lastCheck", "");

@@ -12,13 +12,13 @@ const vm = require('vm');
 const DIR = path.join(__dirname, '../../chrome/content/zotero/xpcom/typosUpdate');
 const SUM = 'e'.repeat(64);
 const NAME = 'Typos-10.0.7.3_x64_setup.exe';
-const API = 'https://api.github.com/repos/sozumen/typos/releases/latest';
-const BASE = 'https://github.com/sozumen/typos/releases/download/v10.0.7.3/';
+const API = 'https://api.github.com/repos/sozumen/typos-releases/releases/latest';
+const BASE = 'https://github.com/sozumen/typos-releases/releases/download/v10.0.7.3/';
 
 function releaseJSON() {
 	return {
 		tag_name: 'v10.0.7.3', draft: false, prerelease: false, body: '## Changes\n- Better things',
-		html_url: 'https://github.com/sozumen/typos/releases/tag/v10.0.7.3',
+		html_url: 'https://github.com/sozumen/typos-releases/releases/tag/v10.0.7.3',
 		assets: [
 			{ name: NAME, size: 7, browser_download_url: BASE + NAME },
 			{ name: 'SHA256SUMS', size: 90, browser_download_url: BASE + 'SHA256SUMS' }
@@ -121,7 +121,7 @@ test('glue: loads and exposes the updater', () => {
 test('glue: settings fall back to defaults and reject a bad repository', () => {
 	let { Zotero } = setup({ prefs: { 'typosUpdate.repo': 'not a repo', 'typosUpdate.intervalHours': 'x' } });
 	let s = Zotero.TyposUpdater.getSettings();
-	assert.equal(s.repo, 'sozumen/typos');
+	assert.equal(s.repo, 'sozumen/typos-releases');
 	assert.equal(s.intervalHours, 24);
 	assert.equal(s.enabled, true);
 	assert.equal(s.lastCheck, 0);
@@ -185,7 +185,7 @@ test('glue: a failed download is reported and can open the release page', async 
 	let { Zotero, log } = setup({ answers: [0, 0], downloadFails: true });
 	await Zotero.TyposUpdater.checkNow({ manual: true });
 	assert.equal(log.processes.length, 0);
-	assert.deepEqual(log.urls, ['https://github.com/sozumen/typos/releases/tag/v10.0.7.3']);
+	assert.deepEqual(log.urls, ['https://github.com/sozumen/typos-releases/releases/tag/v10.0.7.3']);
 });
 
 test('glue: a copy in some other folder opens the release page instead of installing', async () => {

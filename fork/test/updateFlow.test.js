@@ -12,11 +12,11 @@ function releaseJSON(extra = {}) {
 		tag_name: 'v10.0.7.3',
 		draft: false,
 		prerelease: false,
-		html_url: 'https://github.com/sozumen/typos/releases/tag/v10.0.7.3',
+		html_url: 'https://github.com/sozumen/typos-releases/releases/tag/v10.0.7.3',
 		body: 'Notes',
 		assets: [
-			{ name: NAME, size: 5, browser_download_url: 'https://github.com/sozumen/typos/releases/download/v10.0.7.3/' + NAME },
-			{ name: 'SHA256SUMS', size: 90, browser_download_url: 'https://github.com/sozumen/typos/releases/download/v10.0.7.3/SHA256SUMS' }
+			{ name: NAME, size: 5, browser_download_url: 'https://github.com/sozumen/typos-releases/releases/download/v10.0.7.3/' + NAME },
+			{ name: 'SHA256SUMS', size: 90, browser_download_url: 'https://github.com/sozumen/typos-releases/releases/download/v10.0.7.3/SHA256SUMS' }
 		]
 	}, extra);
 }
@@ -35,8 +35,8 @@ function requester(map) {
 	return fn;
 }
 
-const API = 'https://api.github.com/repos/sozumen/typos/releases/latest';
-const base = { repo: 'sozumen/typos', arch: 'x64' };
+const API = 'https://api.github.com/repos/sozumen/typos-releases/releases/latest';
+const base = { repo: 'sozumen/typos-releases', arch: 'x64' };
 
 test('check: a newer release is reported with its installer', async () => {
 	let request = requester({ [API]: { status: 200, text: JSON.stringify(releaseJSON()) } });
@@ -107,7 +107,7 @@ test('check: a release whose installer is not built yet is a manual update', asy
 
 test('check: where an installer cannot run, a newer release is a manual update', async () => {
 	let request = requester({ [API]: { status: 200, text: JSON.stringify(releaseJSON()) } });
-	let r = await F.check({ request, repo: 'sozumen/typos', arch: null, currentVersion: '10.0.7.1' });
+	let r = await F.check({ request, repo: 'sozumen/typos-releases', arch: null, currentVersion: '10.0.7.1' });
 	assert.equal(r.kind, 'update-manual');
 	assert.match(r.message, /Windows/);
 });
