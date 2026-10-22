@@ -250,7 +250,8 @@
 		"shortTitle": "Short title",
 		"title": "Title",
 		"url": "http://www.example.com",
-		"volume": 6
+		"volume": 6,
+		"volumeTitle": "Volume title"
 	},
 	"bookSection": {
 		"DOI": "10.1234/example.doi",
@@ -320,7 +321,8 @@
 		"shortTitle": "Short title",
 		"title": "Title",
 		"url": "http://www.example.com",
-		"volume": 6
+		"volume": 6,
+		"volumeTitle": "Volume title"
 	},
 	"case": {
 		"DOI": "10.1234/example.doi",
@@ -429,7 +431,8 @@
 		"title": "Title",
 		"type": "Type",
 		"url": "http://www.example.com",
-		"volume": 6
+		"volume": 6,
+		"volumeTitle": "Volume title"
 	},
 	"computerProgram": {
 		"DOI": "10.1234/example.doi",
@@ -533,7 +536,8 @@
 		"shortTitle": "Short title",
 		"title": "Title",
 		"url": "http://www.example.com",
-		"volume": 6
+		"volume": 6,
+		"volumeTitle": "Volume title"
 	},
 	"dataset": {
 		"DOI": "10.1234/example.doi",
@@ -634,7 +638,8 @@
 		"shortTitle": "Short title",
 		"title": "Title",
 		"url": "http://www.example.com",
-		"volume": 6
+		"volume": 6,
+		"volumeTitle": "Volume title"
 	},
 	"document": {
 		"DOI": "10.1234/example.doi",
@@ -788,7 +793,8 @@
 		"shortTitle": "Short title",
 		"title": "Title",
 		"url": "http://www.example.com",
-		"volume": 6
+		"volume": 6,
+		"volumeTitle": "Volume title"
 	},
 	"film": {
 		"DOI": "10.1234/example.doi",
@@ -1272,6 +1278,67 @@
 		"shortTitle": "Short title",
 		"title": "Title",
 		"type": "Type",
+		"url": "http://www.example.com"
+	},
+	"multiVolumeWork": {
+		"DOI": "10.1234/example.doi",
+		"ISBN": "978-1-234-56789-7",
+		"ISSN": "1234-5679",
+		"abstractNote": "Abstract note",
+		"accessDate": "1997-06-13T23:59:58Z",
+		"archive": "Archive",
+		"archiveLocation": "Archive location",
+		"callNumber": "Call number",
+		"citationKey": "Citation key",
+		"creators": [
+			{
+				"creatorType": "author",
+				"firstName": "authorFirst",
+				"lastName": "authorLast"
+			},
+			{
+				"creatorType": "contributor",
+				"firstName": "contributorFirst",
+				"lastName": "contributorLast"
+			},
+			{
+				"creatorType": "editor",
+				"firstName": "editorFirst",
+				"lastName": "editorLast"
+			},
+			{
+				"creatorType": "seriesEditor",
+				"firstName": "seriesEditorFirst",
+				"lastName": "seriesEditorLast"
+			},
+			{
+				"creatorType": "translator",
+				"firstName": "translatorFirst",
+				"lastName": "translatorLast"
+			},
+			{
+				"creatorType": "author",
+				"fieldMode": 1,
+				"lastName": "Institutional Author"
+			}
+		],
+		"date": "1999-12-31",
+		"edition": 8,
+		"extra": "Extra",
+		"itemType": "multiVolumeWork",
+		"language": "en-US",
+		"libraryCatalog": "Library catalog",
+		"numberOfVolumes": 7,
+		"originalDate": "Original date",
+		"originalPlace": "Original place",
+		"originalPublisher": "Original publisher",
+		"place": "Place",
+		"publisher": "Publisher",
+		"rights": "Rights",
+		"series": "Series",
+		"seriesNumber": 9,
+		"shortTitle": "Short title",
+		"title": "Title",
 		"url": "http://www.example.com"
 	},
 	"newspaperArticle": {
