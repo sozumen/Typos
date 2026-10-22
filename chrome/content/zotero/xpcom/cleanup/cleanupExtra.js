@@ -31,7 +31,8 @@
 		'volume-title': 'volumeTitle',
 		'pages': 'pages',
 		'page': 'pages',
-		'editor': 'editor'
+		'editor': 'editor',
+		'contributor': 'contributor'
 	};
 
 
@@ -87,8 +88,10 @@
 	 * @param {String} extra
 	 * @return {{
 	 *     series: String|null, container: String|null, volumeTitle: String|null,
-	 *     pages: String|null, editors: Object[], lines: Object, used: Set<Number>, conflicts: String[]
-	 * }} - `used` holds the line indexes that can be removed once the data has moved
+	 *     pages: String|null, editors: Object[], contributors: Object[], lines: Object,
+	 *     used: Set<Number>, conflicts: String[]
+	 * }} - `used` holds the line indexes that can be removed once the data has moved. Contributor
+	 *     lines are in `used` too; a caller that doesn't use them takes `lines.contributors` out.
 	 */
 	function extractEdition(extra) {
 		let result = {
@@ -97,22 +100,25 @@
 			volumeTitle: null,
 			pages: null,
 			editors: [],
-			lines: { series: [], container: [], volumeTitle: [], pages: [] },
+			contributors: [],
+			lines: { series: [], container: [], volumeTitle: [], pages: [], contributors: [] },
 			used: new Set(),
 			conflicts: []
 		};
 		for (let line of parseLines(extra)) {
 			let part = line.norm && LABELS[line.norm];
 			if (!part) continue;
-			if (part === 'editor') {
+			if (part === 'editor' || part === 'contributor') {
 				let creator = parseCreator(line.value);
 				if (!creator) continue;
-				let seen = result.editors.some(e => e.lastName === creator.lastName
+				let list = part === 'editor' ? result.editors : result.contributors;
+				let seen = list.some(e => e.lastName === creator.lastName
 					&& e.firstName === creator.firstName);
 				if (!seen) {
-					result.editors.push(creator);
+					list.push(creator);
 				}
 				result.used.add(line.index);
+				if (part === 'contributor') result.lines.contributors.push(line.index);
 				continue;
 			}
 			if (result[part] === null) {

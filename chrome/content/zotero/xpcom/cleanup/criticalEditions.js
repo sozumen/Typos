@@ -82,14 +82,51 @@
 	}
 
 
+	function _sameName(a, b) {
+		return X.sameText(a.lastName, b.lastName) && X.sameText(a.firstName || '', b.firstName || '');
+	}
+
+
+	/**
+	 * Who edited the edition, from the creators and from Extra
+	 *
+	 * Editors can be creators or "Editor:" lines in Extra. When there is no editor anywhere,
+	 * contributors (creators or "Contributor:" lines) are taken to be the editors: imports often
+	 * file an editor as a contributor.
+	 *
+	 * @return {{ creatorEditors: Object[], creatorContributors: Object[], fromExtra: Object[],
+	 *     contributorsAsEditors: Boolean, all: Object[] }}
+	 *     fromExtra: the names in Extra that will become editors; all: every editor the edition
+	 *     will have, without duplicates
+	 */
+	function _editors(snapshot, extra) {
+		let creators = snapshot.creators || [];
+		let creatorEditors = creators.filter(c => c.creatorType === 'editor');
+		let creatorContributors = creators.filter(c => c.creatorType === 'contributor');
+		let hasEditor = creatorEditors.length > 0 || extra.editors.length > 0;
+		let contributorsAsEditors = !hasEditor
+			&& (creatorContributors.length > 0 || extra.contributors.length > 0);
+		let fromExtra = contributorsAsEditors ? extra.contributors : extra.editors;
+		let all = [];
+		let editorsOnItem = contributorsAsEditors ? creatorContributors : creatorEditors;
+		for (let e of [...editorsOnItem, ...fromExtra]) {
+			if (!all.some(a => _sameName(a, e))) all.push(e);
+		}
+		return { creatorEditors, creatorContributors, fromExtra, contributorsAsEditors, all };
+	}
+
+
 	/**
 	 * Does this item look like a critical edition imported as a Classic Work?
 	 *
-	 * Required: Classic Work type; an author; a title (the work); at least one editor in Extra; and
-	 * a container, book or volume title in Extra.
+	 * Required: Classic Work type; an author; a title (the work); and an editor -- an Editor
+	 * creator, an "Editor:" line in Extra, or, when there is no editor, a contributor (creator or
+	 * "Contributor:" line). A container, book or volume title (in Extra or Volume Title) is used
+	 * when there is one, but isn't needed: without one the edition becomes a Book with the work's
+	 * title.
 	 *
 	 * @return {{ matches: Boolean, missing: String[], nearMiss: Boolean }} - nearMiss: it has
-	 *     editors in Extra but lacks something else, so it may be worth a look
+	 *     an editor or contributor but lacks an author or title, so it may be worth a look
 	 */
 	function test(snapshot) {
 		let missing = [];
@@ -97,14 +134,14 @@
 			return { matches: false, missing: ['classic type'], nearMiss: false };
 		}
 		let extra = _edition(snapshot);
+		let editors = _editors(snapshot, extra);
 		if (!_authors(snapshot).length) missing.push('author');
 		if (!_field(snapshot, 'title')) missing.push('title');
-		if (!extra.editors.length) missing.push('editor in Extra');
-		if (!extra.container && !extra.volumeTitle) missing.push('container, book or volume title in Extra or Volume Title');
+		if (!editors.all.length) missing.push('editor or contributor');
 		return {
 			matches: !missing.length,
 			missing,
-			nearMiss: !!missing.length && extra.editors.length > 0
+			nearMiss: !!missing.length && editors.all.length > 0
 		};
 	}
 
@@ -163,6 +200,11 @@
 	function planItem(snapshot, schema) {
 		if (!test(snapshot).matches) return null;
 		let extra = _edition(snapshot);
+		let editorInfo = _editors(snapshot, extra);
+		if (!editorInfo.contributorsAsEditors) {
+			// Contributor lines in Extra stay there when there are real editors
+			for (let i of extra.lines.contributors) extra.used.delete(i);
+		}
 		let workTitle = _field(snapshot, 'title');
 		let authors = _authors(snapshot);
 		let { publication, multiVolume, volume } = _publicationTitles(extra, workTitle);
@@ -208,10 +250,12 @@
 		}
 		let effectiveSeries = series || extra.series || '';
 
-		// Editors from Extra, minus any the item already has
-		let haveEditors = (snapshot.creators || []).filter(c => c.creatorType === 'editor');
-		let editors = extra.editors.filter(e => !haveEditors.some(h => X.sameText(h.lastName, e.lastName)
-			&& X.sameText(h.firstName || '', e.firstName || '')));
+		// Editors from Extra, minus any the item already has (as editors, or as contributors that
+		// are becoming editors)
+		let haveEditors = editorInfo.contributorsAsEditors
+			? editorInfo.creatorContributors
+			: editorInfo.creatorEditors;
+		let editors = editorInfo.fromExtra.filter(e => !haveEditors.some(h => _sameName(h, e)));
 
 		// Fields of the work that move to the Work record
 		let workFields = {};
@@ -241,6 +285,10 @@
 			set,
 			clear,
 			addEditors: editors,
+			// Contributor creators on the item that become editors
+			contributorsToEditors: editorInfo.contributorsAsEditors
+				? _copy(editorInfo.creatorContributors)
+				: [],
 			workFields,
 			toExtra,
 			removeExtraLines: [...extra.used],
@@ -261,7 +309,7 @@
 					title: mainTitle,
 					// What the preview calls it: the set and the volume together
 					label: publication,
-					editors: _copy(extra.editors),
+					editors: _copy(editorInfo.all),
 					fields: Object.assign(
 						_pick(snapshot, ['series', 'seriesNumber', 'publisher', 'place', 'date', 'edition', 'language', 'ISBN'], set),
 						split ? { volumeTitle: volume } : {}
@@ -394,6 +442,11 @@
 		fields.extra = extra;
 
 		let creators = _copy(snapshot.creators || []);
+		if (plan.contributorsToEditors && plan.contributorsToEditors.length) {
+			creators = creators.map(c => c.creatorType === 'contributor'
+				? Object.assign({}, c, { creatorType: 'editor' })
+				: c);
+		}
 		for (let e of plan.addEditors) {
 			creators.push({ creatorType: 'editor', firstName: e.firstName, lastName: e.lastName, fieldMode: e.fieldMode });
 		}

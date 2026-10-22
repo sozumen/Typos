@@ -1557,7 +1557,7 @@ cleanup-scan = Find items
 cleanup-scanning = Looking through your library…
 cleanup-error = Something went wrong: { $message }
 cleanup-step-critical-editions = Critical editions imported as Classic Works
-cleanup-step-critical-editions-description = Finds Classic Work items that are really modern critical editions: they have an author, a work title, an editor and a book, container or volume title in Extra. Each becomes a Book or Book Section with the editor, series and volume title moved out of Extra, and can be linked to a new Classic Work record for the ancient work, a volume record, and a multi-volume record.
+cleanup-step-critical-editions-description = Finds Classic Work items that are really modern critical editions: they have an author, a work title and an editor (an Editor, an "Editor:" line in Extra, or, when there is no editor, a Contributor). Each becomes a Book or Book Section with the editor, series and volume title moved out of Extra, and can be linked to a new Classic Work record for the ancient work and, when Extra or Volume Title names one, a volume record and a multi-volume record.
 cleanup-preview-heading = Preview
 cleanup-summary = { $items ->
     [0] No items match.
@@ -1575,8 +1575,8 @@ cleanup-items-heading = Items to convert
 cleanup-select-all = Select all
 cleanup-select-none = Select none
 cleanup-nearmiss = { $count ->
-    [one] One more Classic Work has an editor in Extra but is missing an author, a title or a container or volume title, so it was left alone.
-   *[other] { $count } more Classic Works have an editor in Extra but are missing an author, a title or a container or volume title, so they were left alone.
+    [one] One more Classic Work has an editor or contributor but no author or no title, so it was left alone.
+   *[other] { $count } more Classic Works have an editor or contributor but no author or no title, so they were left alone.
 }
 cleanup-apply = Apply
 cleanup-applying = Applying…

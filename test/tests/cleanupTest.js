@@ -104,6 +104,50 @@ describe("Zotero.Cleanup", function () {
 			assert.notInclude(again.items.map(p => p.itemID), tertullian.id);
 		});
 		
+		it("should convert Classic Works with an editor or a contributor in the creators", async function () {
+			async function classicWith(title, creators) {
+				let item = new Zotero.Item('classic');
+				item.libraryID = libraryID;
+				item.setField('title', title);
+				item.setCreators(creators);
+				await item.saveTx();
+				return item;
+			}
+			let author = { creatorType: 'author', name: 'Tertullian' };
+			let withEditor = await classicWith(unique('De anima'), [
+				author, { creatorType: 'editor', lastName: 'Waszink', firstName: 'Jan Hendrik' }
+			]);
+			let withContributor = await classicWith(unique('Apologeticum'), [
+				author, { creatorType: 'contributor', lastName: 'Becker', firstName: 'Carl' }
+			]);
+			let plainWork = await classicWith(unique('De spectaculis'), [author]);
+			
+			let scan = await Zotero.Cleanup.scanCriticalEditions(libraryID);
+			let ids = scan.items.map(p => p.itemID);
+			assert.include(ids, withEditor.id);
+			assert.include(ids, withContributor.id);
+			assert.notInclude(ids, plainWork.id);
+			
+			let mine = [withEditor.id, withContributor.id];
+			let result = await Zotero.Cleanup.applyCriticalEditions(scan, {
+				itemIDs: mine,
+				suggestionIDs: scan.suggestions.filter(s => s.itemIDs.some(id => mine.includes(id))).map(s => s.id)
+			});
+			assert.equal(result.converted, 2);
+			
+			for (let item of [withEditor, withContributor]) {
+				await item.reload();
+				assert.equal(item.itemType, 'book');
+				let types = item.getCreators().map(c => Zotero.CreatorTypes.getName(c.creatorTypeID));
+				assert.deepEqual(types, ['author', 'editor']);
+				let work = (await Zotero.ItemRelations.getOutgoing(item))
+					.find(r => r.typeKey === 'criticalEditionOf').items[0];
+				assert.equal(work.itemType, 'classic');
+				assert.equal(work.getField('title'), item.getField('title'));
+				assert.lengthOf(work.getCreators(), 1);
+			}
+		});
+		
 		it("should make editions of the same work siblings", async function () {
 			let a = await createClassic(unique('Adversus Marcionem'), 'Tertullian', TERTULLIAN);
 			let b = await createClassic(a.getField('title'), 'Tertullian',

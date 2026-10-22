@@ -11,9 +11,13 @@ module under `chrome/content/zotero/xpcom/cleanup/`, write `scan` and `apply`, r
 
 ## Step: critical editions imported as Classic Works
 
-**Which items.** A Classic Work item that has *all* of: an author; a title (the work); at least
-one editor in Extra; and a container, book or volume title in Extra. Classic Works with an editor
-in Extra but missing one of the others are counted and left alone.
+**Which items.** A Classic Work item that has *all* of: an author; a title (the work); and an
+editor. The editor can be an Editor creator, an `Editor:` line in Extra, or, when there is no
+editor anywhere, a Contributor (creator or `Contributor:` line), which then becomes an Editor.
+When there is an editor, contributors stay contributors. A container, book or volume title is used
+when there is one but isn't needed. Classic Works with an editor or contributor but no author or no
+title are counted and left alone. Check the preview for Classic Works that really are works: one
+with a translator filed as Contributor, for example, will be offered too; untick it.
 
 **What is read from Extra** (labels are case-insensitive; `Volume Title`, `volume-title` and
 `Volume_Title` are the same):
@@ -25,6 +29,7 @@ in Extra but missing one of the others are counted and left alone.
 | `volume-title` (or the Volume Title field) | the title of the volume (the publication) |
 | `Pages` | Pages (makes the item a Book Section) |
 | `Editor: Last \|\| First` (one per line) | Editor creators |
+| `Contributor: Last \|\| First` | Editor creators, when there is no editor (otherwise left in Extra) |
 
 Lines that were moved are removed from Extra; every other line is kept. If Extra and the Series
 field disagree, the field wins and the Extra line stays, with a warning in the preview.
@@ -33,7 +38,8 @@ field disagree, the field wins and the Extra line stays, with a warning in the p
 
 - With Pages: a **Book Section**. Title stays the work title; Book Title = the volume title;
   Pages and Series filled in.
-- Without Pages: a **Book**. Title = the volume title.
+- Without Pages: a **Book**. Title = the volume title, or, with no container or volume title,
+  the work's title (the edition is then linked to the work, with no volume or set records).
 - When the volume belongs to a set (Extra has both a container and a volume title), the set's
   title goes in Book Title (sections) or Title (books) and the volume's in **Volume Title**:
   Book Title "Epiphanius", Volume Title "Ancoratus und Panarion haer. 1-33"; Title "Le pédagogue",

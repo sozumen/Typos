@@ -125,6 +125,11 @@ var Zotero_Cleanup = new function () {
 		for (let [field, value] of Object.entries(plan.set)) {
 			lines.push(`${fieldName(field)}: ${value}`);
 		}
+		if (plan.contributorsToEditors && plan.contributorsToEditors.length) {
+			lines.push(`${Zotero.CreatorTypes.getLocalizedString('contributor')} → `
+				+ `${Zotero.CreatorTypes.getLocalizedString('editor')}: `
+				+ plan.contributorsToEditors.map(e => [e.lastName, e.firstName].filter(Boolean).join(', ')).join('; '));
+		}
 		if (plan.addEditors.length) {
 			lines.push(`${Zotero.CreatorTypes.getLocalizedString('editor')}: `
 				+ plan.addEditors.map(e => [e.lastName, e.firstName].filter(Boolean).join(', ')).join('; '));

@@ -88,7 +88,7 @@ test('different text on a second series line is kept, not dropped', () => {
 	assert.deepEqual([...e.used], [0]);
 });
 
-test('the identification test needs type, author, title, an editor in Extra, and a container', () => {
+test('the identification test needs type, author, title and an editor', () => {
 	assert.equal(C.test(tertullian).matches, true);
 	assert.equal(C.test(epiphanius).matches, true);
 	assert.equal(C.test(clement).matches, true);
@@ -97,7 +97,12 @@ test('the identification test needs type, author, title, an editor in Extra, and
 	assert.equal(C.test(noAuthor).nearMiss, true);
 	let book = { ...clement, itemType: 'book' };
 	assert.equal(C.test(book).matches, false);
-	assert.equal(C.test({ ...clement, fields: { title: 'x', extra: 'Editor: A || B' } }).matches, false);
+	// No container or volume title is needed any more
+	assert.equal(C.test({ ...clement, fields: { title: 'x', extra: 'Editor: A || B' } }).matches, true);
+	// An author alone is a plain work, not an edition
+	let plain = { ...clement, fields: { title: 'Iliad' } };
+	assert.deepEqual(C.test(plain).missing, ['editor or contributor']);
+	assert.equal(C.test(plain).nearMiss, false);
 });
 
 test('an item with pages becomes a book section; without pages, a book', () => {
@@ -289,4 +294,84 @@ test('a set is created as a Multi-Volume Work when that type exists', () => {
 	assert.equal(data.fields.series, 'Sources chrétiennes');
 	// Without the schema (or the type) it is a Book, as before
 	assert.equal(C.entityData(set).itemType, 'book');
+});
+
+
+// Classic Works whose editor is a creator, or filed as a contributor
+const author = { creatorType: 'author', lastName: 'Tertullian', firstName: '', fieldMode: 1 };
+const evans = { creatorType: 'editor', lastName: 'Evans', firstName: 'Ernest', fieldMode: 0 };
+const asContributor = c => ({ ...c, creatorType: 'contributor' });
+
+test('an editor in the creators is enough, with nothing in Extra', () => {
+	let item = { id: 30, itemType: 'classic', fields: { title: 'Adversus Marcionem' }, creators: [author, evans] };
+	assert.equal(C.test(item).matches, true);
+	let { items, suggestions } = C.planAll([item], schema);
+	let plan = items[0];
+	assert.equal(plan.newType, 'book');
+	// The edition keeps the work's title, and is linked to a new work record
+	assert.equal(plan.set.title, undefined);
+	assert.deepEqual(plan.addEditors, []);
+	assert.deepEqual(plan.contributorsToEditors, []);
+	assert.deepEqual(suggestions.map(s => s.kind), ['work']);
+	let r = C.resolve(plan, new Set([plan.workKey]), item, schema);
+	assert.equal(r.itemType, 'book');
+	assert.deepEqual(r.creators.map(c => c.creatorType), ['author', 'editor']);
+	assert.deepEqual(r.links, [{ type: 'criticalEditionOf', from: 'item', to: plan.workKey }]);
+});
+
+test('a contributor stands in for a missing editor and becomes one', () => {
+	let item = { id: 31, itemType: 'classic', fields: { title: 'Adversus Marcionem' }, creators: [author, asContributor(evans)] };
+	assert.equal(C.test(item).matches, true);
+	let plan = C.planItem(item, schema);
+	assert.equal(plan.contributorsToEditors.length, 1);
+	let r = C.resolve(plan, new Set(), item, schema);
+	assert.deepEqual(r.creators.map(c => c.creatorType), ['author', 'editor']);
+	assert.equal(r.creators[1].lastName, 'Evans');
+});
+
+test('with a real editor, contributors stay contributors', () => {
+	let other = { creatorType: 'contributor', lastName: 'Helper', firstName: 'A', fieldMode: 0 };
+	let item = { id: 32, itemType: 'classic', fields: { title: 'Adversus Marcionem' }, creators: [author, evans, other] };
+	let plan = C.planItem(item, schema);
+	assert.deepEqual(plan.contributorsToEditors, []);
+	let r = C.resolve(plan, new Set(), item, schema);
+	assert.deepEqual(r.creators.map(c => c.creatorType), ['author', 'editor', 'contributor']);
+});
+
+test('"Contributor:" lines in Extra become editors only when there is no editor', () => {
+	let item = {
+		id: 33, itemType: 'classic',
+		fields: { title: 'Adversus Marcionem', extra: 'Contributor: Evans || Ernest\nkeep: me' },
+		creators: [author]
+	};
+	assert.equal(C.test(item).matches, true);
+	let plan = C.planItem(item, schema);
+	assert.deepEqual(plan.addEditors.map(e => e.lastName), ['Evans']);
+	let r = C.resolve(plan, new Set(), item, schema);
+	assert.equal(r.fields.extra, 'keep: me');
+	assert.deepEqual(r.creators.map(c => c.creatorType), ['author', 'editor']);
+
+	let withEditor = { ...item, id: 34, creators: [author, evans] };
+	let plan2 = C.planItem(withEditor, schema);
+	assert.deepEqual(plan2.addEditors, []);
+	let r2 = C.resolve(plan2, new Set(), withEditor, schema);
+	assert.match(r2.fields.extra, /Contributor: Evans \|\| Ernest/);
+});
+
+test('a volume record gets the editors from the creators as well as from Extra', () => {
+	let item = {
+		id: 35, itemType: 'classic',
+		fields: { title: 'Adversus Marcionem', extra: 'Volume Title: Opera catholica\nPages: 1-20\nEditor: Dekkers || Eligius' },
+		creators: [author, asContributor(evans)]
+	};
+	let { items, suggestions } = C.planAll([item], schema);
+	assert.equal(items[0].newType, 'bookSection');
+	// There is an editor in Extra, so the contributor stays a contributor
+	assert.deepEqual(items[0].contributorsToEditors, []);
+	let volume = C.entityData(suggestions.find(s => s.kind === 'volume'), schema);
+	assert.deepEqual(volume.creators.map(c => c.lastName), ['Dekkers']);
+
+	let both = { ...item, id: 36, creators: [author, evans] };
+	let v2 = C.entityData(C.planAll([both], schema).suggestions.find(s => s.kind === 'volume'), schema);
+	assert.deepEqual(v2.creators.map(c => c.lastName), ['Evans', 'Dekkers']);
 });
