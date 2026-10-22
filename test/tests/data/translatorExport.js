@@ -290,7 +290,8 @@
 		"uri": "http://zotero.org/users/local/riiZoBgm/items/GW3SAWW6",
 		"url": "http://www.example.com",
 		"version": 0,
-		"volume": "6"
+		"volume": "6",
+		"volumeTitle": "Volume title"
 	},
 	"bookSection": {
 		"DOI": "10.1234/example.doi",
@@ -368,7 +369,8 @@
 		"uri": "http://zotero.org/users/local/riiZoBgm/items/RIPPV55H",
 		"url": "http://www.example.com",
 		"version": 0,
-		"volume": "6"
+		"volume": "6",
+		"volumeTitle": "Volume title"
 	},
 	"case": {
 		"DOI": "10.1234/example.doi",
@@ -493,7 +495,8 @@
 		"uri": "http://zotero.org/users/local/jS91QDUK/items/VEE4NYZU",
 		"url": "http://www.example.com",
 		"version": 0,
-		"volume": "6"
+		"volume": "6",
+		"volumeTitle": "Volume title"
 	},
 	"computerProgram": {
 		"DOI": "10.1234/example.doi",
@@ -613,7 +616,8 @@
 		"uri": "http://zotero.org/users/local/riiZoBgm/items/6N2HGGGC",
 		"url": "http://www.example.com",
 		"version": 0,
-		"volume": "6"
+		"volume": "6",
+		"volumeTitle": "Volume title"
 	},
 	"dataset": {
 		"DOI": "10.1234/example.doi",
@@ -730,7 +734,8 @@
 		"uri": "http://zotero.org/users/local/riiZoBgm/items/JPNX3J45",
 		"url": "http://www.example.com",
 		"version": 0,
-		"volume": "6"
+		"volume": "6",
+		"volumeTitle": "Volume title"
 	},
 	"document": {
 		"DOI": "10.1234/example.doi",
@@ -908,7 +913,8 @@
 		"uri": "http://zotero.org/users/local/riiZoBgm/items/IQ4VQRZK",
 		"url": "http://www.example.com",
 		"version": 0,
-		"volume": "6"
+		"volume": "6",
+		"volumeTitle": "Volume title"
 	},
 	"film": {
 		"DOI": "10.1234/example.doi",
@@ -1471,6 +1477,75 @@
 		"tags": [],
 		"title": "Title",
 		"uri": "http://zotero.org/users/local/riiZoBgm/items/EE37TTFA",
+		"url": "http://www.example.com",
+		"version": 0
+	},
+	"multiVolumeWork": {
+		"DOI": "10.1234/example.doi",
+		"ISBN": "978-1-234-56789-7",
+		"ISSN": "1234-5679",
+		"abstractNote": "Abstract note",
+		"accessDate": "1997-06-13T23:59:58Z",
+		"archive": "Archive",
+		"archiveLocation": "Archive location",
+		"attachments": [],
+		"callNumber": "Call number",
+		"citationKey": "Citation key",
+		"collections": [],
+		"creators": [
+			{
+				"creatorType": "author",
+				"firstName": "authorFirst",
+				"lastName": "authorLast"
+			},
+			{
+				"creatorType": "contributor",
+				"firstName": "contributorFirst",
+				"lastName": "contributorLast"
+			},
+			{
+				"creatorType": "editor",
+				"firstName": "editorFirst",
+				"lastName": "editorLast"
+			},
+			{
+				"creatorType": "seriesEditor",
+				"firstName": "seriesEditorFirst",
+				"lastName": "seriesEditorLast"
+			},
+			{
+				"creatorType": "translator",
+				"firstName": "translatorFirst",
+				"lastName": "translatorLast"
+			},
+			{
+				"creatorType": "author",
+				"name": "Institutional Author"
+			}
+		],
+		"date": "1999-12-31",
+		"dateAdded": "2026-10-22T11:48:29Z",
+		"dateModified": "2026-10-22T11:48:29Z",
+		"edition": "8",
+		"extra": "Extra",
+		"itemType": "multiVolumeWork",
+		"language": "en-US",
+		"libraryCatalog": "Library catalog",
+		"notes": [],
+		"numberOfVolumes": "7",
+		"originalDate": "Original date",
+		"originalPlace": "Original place",
+		"originalPublisher": "Original publisher",
+		"place": "Place",
+		"publisher": "Publisher",
+		"relations": {},
+		"rights": "Rights",
+		"series": "Series",
+		"seriesNumber": "9",
+		"shortTitle": "Short title",
+		"tags": [],
+		"title": "Title",
+		"uri": "http://zotero.org/users/local/AnGfjj97/items/HBEXDP2B",
 		"url": "http://www.example.com",
 		"version": 0
 	},
