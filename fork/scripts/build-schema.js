@@ -25,6 +25,9 @@ const UPSTREAM = path.join(ROOT, 'resource', 'schema', 'global', 'schema.json');
 const OVERLAY = path.join(ROOT, 'fork', 'schema', 'overlay.json');
 const OUTPUT = path.join(ROOT, 'resource', 'schema', 'fork', 'schema.json');
 
+// CSL 1.0.2 text variables Zotero's schema doesn't map (yet), which the overlay may map
+const NEW_CSL_TEXT_VARIABLES = ['volume-title', 'part-title', 'part-number', 'chapter-number', 'container-title-short'];
+
 function readJSON(file) {
 	return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
@@ -49,6 +52,33 @@ function apply(upstream, overlay) {
 	// Keep item types alphabetical like upstream so diffs stay readable
 	schema.itemTypes.sort((a, b) => a.itemType.localeCompare(b.itemType, 'en'));
 
+	// Fields added to existing item types: { field, after, itemTypes: [...] }. The field goes
+	// after the named field (or at the end, before Extra, if the type doesn't have it).
+	let addedFields = [];
+	for (let add of overlay.addFields || []) {
+		if (!add.field || !Array.isArray(add.itemTypes) || !add.itemTypes.length) {
+			throw new Error("Each addFields entry needs a field and a list of itemTypes");
+		}
+		for (let typeName of add.itemTypes) {
+			let type = schema.itemTypes.find(t => t.itemType === typeName);
+			if (!type) {
+				throw new Error(`addFields: no item type ${typeName}`);
+			}
+			if (type.fields.some(f => f.field === add.field)) {
+				throw new Error(`addFields: ${typeName} already has ${add.field} -- remove it from the overlay`);
+			}
+			let entry = { field: add.field };
+			if (add.baseField) entry.baseField = add.baseField;
+			let index = type.fields.findIndex(f => f.field === add.after);
+			if (index === -1) {
+				index = type.fields.findIndex(f => f.field === 'extra') - 1;
+				if (index < -1) index = type.fields.length - 1;
+			}
+			type.fields.splice(index + 1, 0, entry);
+		}
+		addedFields.push(add.field);
+	}
+
 	// Every field and creator type used by an overlay type must be resolvable
 	let knownFields = new Set();
 	let knownCreators = new Set();
@@ -56,7 +86,7 @@ function apply(upstream, overlay) {
 		type.fields.forEach(f => knownFields.add(f.field));
 		type.creatorTypes.forEach(c => knownCreators.add(c.creatorType));
 	}
-	let newFields = new Set();
+	let newFields = new Set(addedFields.filter(f => !knownFields.has(f)));
 	for (let type of overlay.itemTypes || []) {
 		for (let f of type.fields) {
 			if (!knownFields.has(f.field)) newFields.add(f.field);
@@ -82,7 +112,11 @@ function apply(upstream, overlay) {
 	for (let [cslField, zoteroFields] of Object.entries(((overlay.csl || {}).fields || {}).text || {})) {
 		let list = schema.csl.fields.text[cslField];
 		if (!list) {
-			throw new Error(`Unknown CSL text field ${cslField}`);
+			// A CSL variable upstream doesn't map yet; only standard CSL 1.0.2 variables
+			if (!NEW_CSL_TEXT_VARIABLES.includes(cslField)) {
+				throw new Error(`Unknown CSL text field ${cslField}`);
+			}
+			list = schema.csl.fields.text[cslField] = [];
 		}
 		for (let f of zoteroFields) {
 			if (!list.includes(f)) list.push(f);

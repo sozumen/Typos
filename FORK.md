@@ -94,6 +94,25 @@ for. Citing "Iliad 1.1" itself comes from the locator you type when citing, usin
 For CSL it maps to type `book`, so every existing style works. Styles that want a distinct
 classic type would need a CSL addition.
 
+### 1a. Multi-Volume Work item type and Volume Title field
+
+Also in the overlay:
+
+- **Multi-Volume Work** is the record for a set of volumes (Die griechischen christlichen
+  Schriftsteller, Sources chrétiennes' *Le pédagogue* in three books). It has the fields of a book
+  without Volume or Pages, and is cited as CSL `book`. Link each volume to it with *Part of*.
+- **Volume Title**, right after Volume, on Book, Book Section, Encyclopedia Article, Dictionary
+  Entry, Conference Paper and Classic Work. It is CSL's `volume-title`, so a style that prints that
+  variable shows it; many styles don't use it yet. In Book Title / Title goes the
+  title of the set, and in Volume Title the title of the volume.
+- Zotero moves `Volume Title:` and `volume-title:` lines from Extra into the new field by itself,
+  once, after the update. Library Cleanup reads the volume title from either place.
+- The overlay can now add fields to upstream item types (`addFields`) and map CSL variables
+  upstream doesn't (`csl.fields.text`). Its `versionOffset` went from 100000 to 100100 so existing
+  databases update; raise it by 100 for each later overlay change.
+- Not synced: Zotero's sync server doesn't know these types or fields (the same as Classic Work).
+  Zotero's own export translators (RIS, BibTeX…) don't know Volume Title and leave it out.
+
 ### 2. Relationships
 
 Five typed, directed relations, each with an inverse label in the UI: **part of**,

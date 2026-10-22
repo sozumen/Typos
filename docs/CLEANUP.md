@@ -22,7 +22,7 @@ in Extra but missing one of the others are counted and left alone.
 |---|---|
 | `collection`, `collection-title`, `series`, `series-title` | Series |
 | `container-title`, `book-title` | the set the volume belongs to |
-| `volume-title` | the title of the volume (the publication) |
+| `volume-title` (or the Volume Title field) | the title of the volume (the publication) |
 | `Pages` | Pages (makes the item a Book Section) |
 | `Editor: Last \|\| First` (one per line) | Editor creators |
 
@@ -34,8 +34,10 @@ field disagree, the field wins and the Extra line stays, with a warning in the p
 - With Pages: a **Book Section**. Title stays the work title; Book Title = the volume title;
   Pages and Series filled in.
 - Without Pages: a **Book**. Title = the volume title.
-- A volume title that is only a number ("Livre 1", "Vol. 2", "Band 3") is joined to the container
-  title: "Le pédagogue, Livre 1".
+- When the volume belongs to a set (Extra has both a container and a volume title), the set's
+  title goes in Book Title (sections) or Title (books) and the volume's in **Volume Title**:
+  Book Title "Epiphanius", Volume Title "Ancoratus und Panarion haer. 1-33"; Title "Le pédagogue",
+  Volume Title "Livre 1".
 - Authors stay on the item; editors from Extra are added. Fields the new type can't hold go to
   Extra as `Label: value`, never dropped.
 
@@ -47,8 +49,8 @@ field disagree, the field wins and the Extra line stays, with a warning in the p
    and author already exists, it is offered instead of a new one.
 2. **Volume** (Book Sections only): the Book the section is in, with the editors and series. The
    item gets *Part of* → the volume.
-3. **Multi-volume work**: a Book titled with the container title ("Epiphanius", "Le pédagogue"),
-   with the series. The volume (or the item itself, for a whole book) gets *Part of* → it.
+3. **Multi-volume work**: a **Multi-Volume Work** record titled with the container title
+   ("Epiphanius", "Le pédagogue"), with the series. The volume (or the item itself, for a whole book) gets *Part of* → it.
 
 Items that share a work, volume or set share one record. If you untick a record, the items are
 still converted, the data that would have moved to it goes to Extra, and no link is made.

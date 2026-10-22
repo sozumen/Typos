@@ -193,7 +193,7 @@ Zotero.Cleanup = new function () {
 					if (existing && !existing.deleted) records.set(s.id, existing);
 					continue;
 				}
-				let data = C.entityData(s);
+				let data = C.entityData(s, schema);
 				let record = new Zotero.Item(data.itemType);
 				record.libraryID = scan.libraryID;
 				_applyData(record, data);

@@ -126,15 +126,18 @@ test('Tertullian: section of a volume, series filled in, no multi-volume parent'
 
 test('Epiphanius: a whole volume in a set called "Epiphanius"', () => {
 	let plan = C.planItem(epiphanius, schema);
-	assert.equal(plan.set.title, 'Ancoratus und Panarion <i>haer.</i> 1-33');
+	// The set's title is the title; the volume's own title goes in Volume Title
+	assert.equal(plan.set.title, 'Epiphanius');
+	assert.equal(plan.set.volumeTitle, 'Ancoratus und Panarion <i>haer.</i> 1-33');
 	assert.equal(plan.entity.multiVolume.title, 'Epiphanius');
 	assert.equal(plan.volumeKey, null);
 	assert.ok(plan.itemIsVolume);
 });
 
-test('Clement: "Livre 1" is joined to the container title', () => {
+test('Clement: "Livre 1" goes in Volume Title, the set\'s title in Title', () => {
 	let plan = C.planItem(clement, schema);
-	assert.equal(plan.set.title, 'Le pédagogue, Livre 1');
+	assert.equal(plan.set.title, 'Le pédagogue');
+	assert.equal(plan.set.volumeTitle, 'Livre 1');
 	assert.equal(plan.entity.multiVolume.title, 'Le pédagogue');
 	assert.equal(plan.addEditors.length, 2);
 });
@@ -228,4 +231,62 @@ test('planAll: a shared record gets the fields from whichever item has them', ()
 	let work = suggestions.find(s => s.kind === 'work');
 	assert.equal(work.build.fields.referenceSystem, 'Book, chapter');
 	assert.equal(C.entityData(work).fields.originalLanguage, 'la');
+});
+
+
+test('without a Volume Title field, the set and volume titles are joined as before', () => {
+	let noVolumeTitle = {
+		isValidField: (type, field) => field !== 'volumeTitle' && schema.isValidField(type, field),
+		isValidCreatorType: schema.isValidCreatorType
+	};
+	let plan = C.planItem(clement, noVolumeTitle);
+	assert.equal(plan.set.title, 'Le pédagogue, Livre 1');
+	assert.equal(plan.set.volumeTitle, undefined);
+	assert.equal(C.planItem(epiphanius, noVolumeTitle).set.title, 'Ancoratus und Panarion <i>haer.</i> 1-33');
+});
+
+test('a volume title Zotero already moved from Extra into the field is still read', () => {
+	let lines = tertullian.fields.extra.split('\n').filter(l => !/^Volume Title/.test(l));
+	let moved = {
+		...tertullian,
+		fields: { ...tertullian.fields, extra: lines.join('\n'), volumeTitle: 'Opera catholica. Adversus Marcionem' }
+	};
+	assert.equal(C.test(moved).matches, true);
+	let plan = C.planItem(moved, schema);
+	assert.equal(plan.set.bookTitle, 'Opera catholica. Adversus Marcionem');
+	// It is now the book title, so the field is cleared rather than kept twice
+	assert.deepEqual(plan.clear, ['volumeTitle']);
+	let r = C.resolve(plan, new Set(), moved, schema);
+	assert.equal(r.fields.volumeTitle, null);
+	assert.equal(r.fields.bookTitle, 'Opera catholica. Adversus Marcionem');
+});
+
+test('a section in a volume of a set: Book Title is the set, Volume Title the volume', () => {
+	let section = {
+		...epiphanius, id: 20,
+		fields: { ...epiphanius.fields, extra: epiphanius.fields.extra + '\nPages: 1-100' }
+	};
+	let { items, suggestions } = C.planAll([section], schema);
+	let plan = items[0];
+	assert.equal(plan.newType, 'bookSection');
+	assert.equal(plan.set.bookTitle, 'Epiphanius');
+	assert.equal(plan.set.volumeTitle, 'Ancoratus und Panarion <i>haer.</i> 1-33');
+	let volume = suggestions.find(s => s.kind === 'volume');
+	// The preview names the volume in full; the record splits it like the item
+	assert.equal(volume.title, 'Ancoratus und Panarion <i>haer.</i> 1-33');
+	let data = C.entityData(volume, schema);
+	assert.equal(data.itemType, 'book');
+	assert.equal(data.fields.title, 'Epiphanius');
+	assert.equal(data.fields.volumeTitle, 'Ancoratus und Panarion <i>haer.</i> 1-33');
+});
+
+test('a set is created as a Multi-Volume Work when that type exists', () => {
+	let { suggestions } = C.planAll([clement], schema);
+	let set = suggestions.find(s => s.kind === 'multiVolume');
+	let data = C.entityData(set, schema);
+	assert.equal(data.itemType, 'multiVolumeWork');
+	assert.equal(data.fields.title, 'Le pédagogue');
+	assert.equal(data.fields.series, 'Sources chrétiennes');
+	// Without the schema (or the type) it is a Book, as before
+	assert.equal(C.entityData(set).itemType, 'book');
 });

@@ -61,6 +61,28 @@
 
 
 	/**
+	 * What Extra says about the edition, plus the Volume Title field
+	 *
+	 * Zotero moves "Volume Title:" lines out of Extra into the Volume Title field once the item
+	 * type has that field, so a volume title can be in either place.
+	 */
+	function _edition(snapshot) {
+		let extra = X.extractEdition(_field(snapshot, 'extra'));
+		let fieldValue = _field(snapshot, 'volumeTitle');
+		if (fieldValue) {
+			if (!extra.volumeTitle) {
+				extra.volumeTitle = fieldValue;
+			}
+			else if (!X.sameText(extra.volumeTitle, fieldValue)) {
+				extra.conflicts.push(`Volume Title: ${fieldValue} (the field; Extra says "${extra.volumeTitle}")`);
+			}
+			extra.volumeTitleInField = true;
+		}
+		return extra;
+	}
+
+
+	/**
 	 * Does this item look like a critical edition imported as a Classic Work?
 	 *
 	 * Required: Classic Work type; an author; a title (the work); at least one editor in Extra; and
@@ -74,11 +96,11 @@
 		if (snapshot.itemType !== 'classic') {
 			return { matches: false, missing: ['classic type'], nearMiss: false };
 		}
-		let extra = X.extractEdition(_field(snapshot, 'extra'));
+		let extra = _edition(snapshot);
 		if (!_authors(snapshot).length) missing.push('author');
 		if (!_field(snapshot, 'title')) missing.push('title');
 		if (!extra.editors.length) missing.push('editor in Extra');
-		if (!extra.container && !extra.volumeTitle) missing.push('container, book or volume title in Extra');
+		if (!extra.container && !extra.volumeTitle) missing.push('container, book or volume title in Extra or Volume Title');
 		return {
 			matches: !missing.length,
 			missing,
@@ -90,24 +112,25 @@
 	/**
 	 * Work out the title of the publication the item sits in
 	 *
-	 * @return {{ publication: String, multiVolume: String|null }}
-	 *     publication: the volume (or the book) the edition is printed in.
+	 * @return {{ publication: String, multiVolume: String|null, volume: String|null }}
+	 *     publication: the volume (or the book) the edition is printed in, as one title.
 	 *     multiVolume: the set the volume belongs to, when there is both a container and a volume
 	 *     title that isn't just a number.
+	 *     volume: when there is a set, the volume's own title or designation (for Volume Title)
 	 */
 	function _publicationTitles(extra, workTitle) {
 		let container = extra.container;
 		let volume = extra.volumeTitle;
 		if (container && volume) {
 			if (looksLikeDesignation(volume)) {
-				return { publication: `${container}, ${volume}`, multiVolume: container };
+				return { publication: `${container}, ${volume}`, multiVolume: container, volume };
 			}
 			if (X.sameText(container, volume)) {
-				return { publication: volume, multiVolume: null };
+				return { publication: volume, multiVolume: null, volume: null };
 			}
-			return { publication: volume, multiVolume: container };
+			return { publication: volume, multiVolume: container, volume };
 		}
-		return { publication: volume || container || workTitle, multiVolume: null };
+		return { publication: volume || container || workTitle, multiVolume: null, volume: null };
 	}
 
 
@@ -139,11 +162,10 @@
 	 */
 	function planItem(snapshot, schema) {
 		if (!test(snapshot).matches) return null;
-		let extraText = _field(snapshot, 'extra');
-		let extra = X.extractEdition(extraText);
+		let extra = _edition(snapshot);
 		let workTitle = _field(snapshot, 'title');
 		let authors = _authors(snapshot);
-		let { publication, multiVolume } = _publicationTitles(extra, workTitle);
+		let { publication, multiVolume, volume } = _publicationTitles(extra, workTitle);
 		let hasPages = !!extra.pages || !!_field(snapshot, 'pages');
 		let newType = hasPages ? 'bookSection' : 'book';
 
@@ -152,14 +174,26 @@
 			warnings.push(`Left in Extra because it differs from another line: ${c}`);
 		}
 
-		// Fields to set on the converted item
+		// Fields to set on the converted item. When the volume is part of a set and the type has a
+		// Volume Title field, the set's title and the volume's title go in separate fields (as CSL's
+		// container-title / title and volume-title); otherwise they are joined into one title.
 		let set = {};
+		let clear = [];
+		let split = !!(multiVolume && volume && schema.isValidField(newType, 'volumeTitle'));
+		let mainTitle = split ? multiVolume : publication;
 		if (newType === 'book') {
-			if (X.foldText(publication) !== X.foldText(workTitle)) set.title = publication;
+			if (X.foldText(mainTitle) !== X.foldText(workTitle)) set.title = mainTitle;
 		}
 		else {
-			set.bookTitle = publication;
+			set.bookTitle = mainTitle;
 			set.pages = extra.pages || _field(snapshot, 'pages');
+		}
+		if (split) {
+			set.volumeTitle = volume;
+		}
+		else if (extra.volumeTitleInField) {
+			// The volume title is now part of the title above; don't keep it twice
+			clear.push('volumeTitle');
 		}
 		let series = _field(snapshot, 'series');
 		if (extra.series) {
@@ -205,6 +239,7 @@
 			workTitle,
 			newType,
 			set,
+			clear,
 			addEditors: editors,
 			workFields,
 			toExtra,
@@ -223,9 +258,14 @@
 					language: _field(snapshot, 'language')
 				},
 				volume: volumeKey ? {
-					title: publication,
+					title: mainTitle,
+					// What the preview calls it: the set and the volume together
+					label: publication,
 					editors: _copy(extra.editors),
-					fields: _pick(snapshot, ['series', 'seriesNumber', 'publisher', 'place', 'date', 'edition', 'language', 'ISBN'], set)
+					fields: Object.assign(
+						_pick(snapshot, ['series', 'seriesNumber', 'publisher', 'place', 'date', 'edition', 'language', 'ISBN'], set),
+						split ? { volumeTitle: volume } : {}
+					)
 				} : null,
 				multiVolume: multiKey ? {
 					title: multiVolume,
@@ -279,7 +319,7 @@
 		let existingWorks = new Map();
 		for (let snap of snapshots) {
 			if (snap.itemType !== 'classic' || candidates.has(snap.id)) continue;
-			let extra = X.extractEdition(_field(snap, 'extra'));
+			let extra = _edition(snap);
 			if (extra.editors.length || extra.container || extra.volumeTitle) continue;
 			let key = _workKey(_field(snap, 'title'), _authors(snap));
 			if (!existingWorks.has(key)) existingWorks.set(key, snap.id);
@@ -306,7 +346,8 @@
 			suggest(plan.workKey, 'work', plan.entity.work.title, plan.itemID, plan.entity.work,
 				existingWorks.get(plan.workKey) || null);
 			if (plan.volumeKey) {
-				suggest(plan.volumeKey, 'volume', plan.entity.volume.title, plan.itemID, plan.entity.volume);
+				suggest(plan.volumeKey, 'volume', plan.entity.volume.label || plan.entity.volume.title, plan.itemID,
+					plan.entity.volume);
 			}
 			if (plan.multiKey) {
 				suggest(plan.multiKey, 'multiVolume', plan.entity.multiVolume.title, plan.itemID,
@@ -349,6 +390,7 @@
 			if (v && schema.isValidField(plan.newType, f)) fields[f] = v;
 		}
 		for (let f of WORK_FIELDS) fields[f] = null;
+		for (let f of plan.clear || []) fields[f] = null;
 		fields.extra = extra;
 
 		let creators = _copy(snapshot.creators || []);
@@ -384,9 +426,11 @@
 	 * Fields and creators for a record the step creates
 	 *
 	 * @param {Object} suggestion - one of planAll's suggestions
+	 * @param {Object} [schema] - to check that the Multi-Volume Work type exists; without it, or
+	 *     without that type, a set is created as a Book
 	 * @return {{ itemType: String, fields: Object, creators: Object[] }}
 	 */
-	function entityData(suggestion) {
+	function entityData(suggestion, schema) {
 		let b = suggestion.build;
 		if (suggestion.kind === 'work') {
 			let fields = Object.assign({ title: b.title }, b.fields);
@@ -396,7 +440,16 @@
 		let creators = suggestion.kind === 'volume'
 			? b.editors.map(e => ({ creatorType: 'editor', firstName: e.firstName, lastName: e.lastName, fieldMode: e.fieldMode }))
 			: [];
-		return { itemType: 'book', fields, creators };
+		let itemType = 'book';
+		if (suggestion.kind === 'multiVolume' && schema && schema.isValidField('multiVolumeWork', 'title')) {
+			itemType = 'multiVolumeWork';
+		}
+		if (schema) {
+			for (let f of Object.keys(fields)) {
+				if (!schema.isValidField(itemType, f)) delete fields[f];
+			}
+		}
+		return { itemType, fields, creators };
 	}
 
 

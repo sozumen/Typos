@@ -1,67 +1,273 @@
 {
-	"versionOffset": 100000,
+	"versionOffset": 100100,
+	"_versionOffset": "Raise by 100 whenever this overlay changes, so databases pick up the change (upstream adds 1 per schema release).",
 	"itemTypes": [
 		{
 			"itemType": "classic",
 			"fields": [
-				{ "field": "title" },
-				{ "field": "abstractNote" },
-				{ "field": "referenceSystem" },
-				{ "field": "corpusId" },
-				{ "field": "compositionDate" },
-				{ "field": "originalLanguage" },
-				{ "field": "manuscriptType", "baseField": "type" },
-				{ "field": "series" },
-				{ "field": "seriesNumber" },
-				{ "field": "volume" },
-				{ "field": "numberOfVolumes" },
-				{ "field": "edition" },
-				{ "field": "date" },
-				{ "field": "publisher" },
-				{ "field": "place" },
-				{ "field": "originalDate" },
-				{ "field": "originalPublisher" },
-				{ "field": "originalPlace" },
-				{ "field": "numPages" },
-				{ "field": "ISBN" },
-				{ "field": "DOI" },
-				{ "field": "citationKey" },
-				{ "field": "url" },
-				{ "field": "accessDate" },
-				{ "field": "archive" },
-				{ "field": "archiveLocation" },
-				{ "field": "shortTitle" },
-				{ "field": "language" },
-				{ "field": "libraryCatalog" },
-				{ "field": "callNumber" },
-				{ "field": "rights" },
-				{ "field": "extra" }
+				{
+					"field": "title"
+				},
+				{
+					"field": "abstractNote"
+				},
+				{
+					"field": "referenceSystem"
+				},
+				{
+					"field": "corpusId"
+				},
+				{
+					"field": "compositionDate"
+				},
+				{
+					"field": "originalLanguage"
+				},
+				{
+					"field": "manuscriptType",
+					"baseField": "type"
+				},
+				{
+					"field": "series"
+				},
+				{
+					"field": "seriesNumber"
+				},
+				{
+					"field": "volume"
+				},
+				{
+					"field": "volumeTitle"
+				},
+				{
+					"field": "numberOfVolumes"
+				},
+				{
+					"field": "edition"
+				},
+				{
+					"field": "date"
+				},
+				{
+					"field": "publisher"
+				},
+				{
+					"field": "place"
+				},
+				{
+					"field": "originalDate"
+				},
+				{
+					"field": "originalPublisher"
+				},
+				{
+					"field": "originalPlace"
+				},
+				{
+					"field": "numPages"
+				},
+				{
+					"field": "ISBN"
+				},
+				{
+					"field": "DOI"
+				},
+				{
+					"field": "citationKey"
+				},
+				{
+					"field": "url"
+				},
+				{
+					"field": "accessDate"
+				},
+				{
+					"field": "archive"
+				},
+				{
+					"field": "archiveLocation"
+				},
+				{
+					"field": "shortTitle"
+				},
+				{
+					"field": "language"
+				},
+				{
+					"field": "libraryCatalog"
+				},
+				{
+					"field": "callNumber"
+				},
+				{
+					"field": "rights"
+				},
+				{
+					"field": "extra"
+				}
 			],
 			"creatorTypes": [
-				{ "creatorType": "author", "primary": true },
-				{ "creatorType": "editor" },
-				{ "creatorType": "translator" },
-				{ "creatorType": "contributor" },
-				{ "creatorType": "seriesEditor" }
+				{
+					"creatorType": "author",
+					"primary": true
+				},
+				{
+					"creatorType": "editor"
+				},
+				{
+					"creatorType": "translator"
+				},
+				{
+					"creatorType": "contributor"
+				},
+				{
+					"creatorType": "seriesEditor"
+				}
+			]
+		},
+		{
+			"itemType": "multiVolumeWork",
+			"fields": [
+				{
+					"field": "title"
+				},
+				{
+					"field": "abstractNote"
+				},
+				{
+					"field": "series"
+				},
+				{
+					"field": "seriesNumber"
+				},
+				{
+					"field": "numberOfVolumes"
+				},
+				{
+					"field": "edition"
+				},
+				{
+					"field": "date"
+				},
+				{
+					"field": "publisher"
+				},
+				{
+					"field": "place"
+				},
+				{
+					"field": "originalDate"
+				},
+				{
+					"field": "originalPublisher"
+				},
+				{
+					"field": "originalPlace"
+				},
+				{
+					"field": "ISBN"
+				},
+				{
+					"field": "DOI"
+				},
+				{
+					"field": "citationKey"
+				},
+				{
+					"field": "url"
+				},
+				{
+					"field": "accessDate"
+				},
+				{
+					"field": "ISSN"
+				},
+				{
+					"field": "archive"
+				},
+				{
+					"field": "archiveLocation"
+				},
+				{
+					"field": "shortTitle"
+				},
+				{
+					"field": "language"
+				},
+				{
+					"field": "libraryCatalog"
+				},
+				{
+					"field": "callNumber"
+				},
+				{
+					"field": "rights"
+				},
+				{
+					"field": "extra"
+				}
+			],
+			"creatorTypes": [
+				{
+					"creatorType": "author",
+					"primary": true
+				},
+				{
+					"creatorType": "editor"
+				},
+				{
+					"creatorType": "seriesEditor"
+				},
+				{
+					"creatorType": "translator"
+				},
+				{
+					"creatorType": "contributor"
+				}
 			]
 		}
 	],
 	"csl": {
 		"types": {
-			"book": ["classic"]
+			"book": [
+				"classic",
+				"multiVolumeWork"
+			]
+		},
+		"fields": {
+			"text": {
+				"volume-title": [
+					"volumeTitle"
+				]
+			}
 		}
 	},
 	"locales": {
 		"en-US": {
 			"itemTypes": {
-				"classic": "Classic Work"
+				"classic": "Classic Work",
+				"multiVolumeWork": "Multi-Volume Work"
 			},
 			"fields": {
 				"referenceSystem": "Reference System",
 				"corpusId": "Corpus ID",
 				"compositionDate": "Composition Date",
-				"originalLanguage": "Original Language"
+				"originalLanguage": "Original Language",
+				"volumeTitle": "Volume Title"
 			}
 		}
-	}
+	},
+	"addFields": [
+		{
+			"field": "volumeTitle",
+			"after": "volume",
+			"itemTypes": [
+				"book",
+				"bookSection",
+				"encyclopediaArticle",
+				"dictionaryEntry",
+				"conferencePaper"
+			]
+		}
+	]
 }

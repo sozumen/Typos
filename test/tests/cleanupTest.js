@@ -90,10 +90,12 @@ describe("Zotero.Cleanup", function () {
 			// Clement: a whole book that is part of a set; unrelated Extra lines kept
 			await clement.reload();
 			assert.equal(clement.itemType, 'book');
-			assert.equal(clement.getField('title'), 'Le pédagogue, Livre 1');
+			assert.equal(clement.getField('title'), 'Le pédagogue');
+			assert.equal(clement.getField('volumeTitle'), 'Livre 1');
 			assert.equal(clement.getField('extra'), 'keep: me');
 			let set = (await Zotero.ItemRelations.getOutgoing(clement))
 				.find(r => r.typeKey === 'partOf').items[0];
+			assert.equal(set.itemType, 'multiVolumeWork');
 			assert.equal(set.getField('title'), 'Le pédagogue');
 			assert.equal(set.getField('series'), 'Sources chrétiennes');
 			
